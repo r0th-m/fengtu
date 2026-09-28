@@ -112,8 +112,8 @@ lnk/USN/EFU/JumpList/浏览器/SRUM 等）归一入库，规则引擎与适用�
 （前端 embed 进镜像）+ PostgreSQL 16 + ClickHouse 25.8。
 
 ```bash
-# 1) 配环境(口令三处同串:POSTGRES_PASSWORD=FENGTU_PG 口令段;
-#    CLICKHOUSE_PASSWORD=FENGTU_CH_PASS;端口绑定缺省 127.0.0.1=仅本机)
+# 1) 配环境(口令三处同串:POSTGRES 口令 = FENGTU_PG 连接串的口令段;
+#    CH 口令 = FENGTU_CH_PASS;端口绑定缺省仅本机回环)
 cp .env.example .env && chmod 600 .env && $EDITOR .env
 
 # 2) 构建并起栈(Go 依赖走 vendor/ 内嵌,构建期零外网拉取;
@@ -257,8 +257,8 @@ AES-GCM 密文永不回显、预算闸/并发上限/代理/联网搜索集中管
 
 ## 配置要点
 
-- **口令三处同串**：`POSTGRES_PASSWORD` = `FENGTU_PG` 口令段；
-  `CLICKHOUSE_PASSWORD` = `FENGTU_CH_PASS`；占位口令必须更换。
+- **口令三处同串**：POSTGRES 口令 = `FENGTU_PG` 连接串的口令段；
+  CH 口令 = `FENGTU_CH_PASS`；占位口令必须更换。
 - **绑定纪律**：丰图 web 口缺省只绑 `127.0.0.1`（`FENGTU_BIND_IP` 控制）；
   要给团队访问走内网 IP 或 TLS 反代，反代后 `FENGTU_COOKIE_SECURE=true`。
 - **AI 外发默认关**：不配 key 时 AI 端点 503/外发闸 403，其余功能不受影响；

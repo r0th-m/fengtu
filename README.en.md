@@ -144,8 +144,8 @@ ClickHouse 25.8.
 
 ```bash
 # 1) Configure (the password string must match in three places:
-#    POSTGRES_PASSWORD = the password segment of FENGTU_PG;
-#    CLICKHOUSE_PASSWORD = FENGTU_CH_PASS; default bind 127.0.0.1 = local only)
+#    Postgres password = the password segment of FENGTU_PG;
+#    ClickHouse password = FENGTU_CH_PASS; default bind is loopback only)
 cp .env.example .env && chmod 600 .env && $EDITOR .env
 
 # 2) Build and start (Go dependencies are vendored — zero network fetches
@@ -312,8 +312,8 @@ Known boundaries (honest):
 
 ## Configuration essentials
 
-- **One password string in three places**: `POSTGRES_PASSWORD` = the password
-  segment of `FENGTU_PG`; `CLICKHOUSE_PASSWORD` = `FENGTU_CH_PASS`. Replace
+- **One password string in three places**: Postgres password = the password
+  segment of `FENGTU_PG`; ClickHouse password = `FENGTU_CH_PASS`. Replace
   every placeholder.
 - **Binding discipline**: the web port binds `127.0.0.1` by default
   (`FENGTU_BIND_IP`); expose to a team via an internal address or a TLS reverse
