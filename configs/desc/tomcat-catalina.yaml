@@ -1,0 +1,32 @@
+# Tomcat catalina.out(stdout)描述文件——JULI + 内嵌应用 log4j 双行式。
+#
+# 实测组成(台架 catalina.out 6.1GB,30 点 × 10 万行随机采样):
+#   JULI 起始行 ≈1.8% | log4j 起始行 ≈4.3% | 堆栈/续行 ≈94%
+#   - JULI : 27-Apr-2023 15:57:04.985 信息 [main] o.a.c.startup.X.log 消息
+#   - log4j: 04-27 16:28:57 DEBUG addDocsCmd(smartbi...:3878) - 消息
+# 两种起始行都开多行块;ts 抽取一个组通吃两种日期,ts_formats 逐个试
+# (引擎契约)。log4j 简写日期无年份 → 引擎默认年 1900,如实落 1900
+# 分区(与 testdata app-log4j 同款纪律,不猜当年,跨年如实归属)。
+name: tomcat-catalina
+title: Tomcat catalina.out(JULI + 内嵌 log4j,带堆栈合并)
+kind: regex
+log_type: app_log
+line_regex: '^(?P<ts>\d{2}-[A-Za-z]{3}-\d{4} \d{2}:\d{2}:\d{2}\.\d{3}|\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<level>\S+) (?:\[(?P<thread>[^\]]+)\] )?(?P<logger>\S+?)(?: -)? (?P<message>.*)$'
+field_map:
+  ts: ts_raw
+  level: level
+  logger: logger
+  message: message
+ts_field: ts
+ts_formats:
+- '%d-%b-%Y %H:%M:%S.%f'
+- '%m-%d %H:%M:%S'
+multiline:
+  start_regex: ^(?:\d{2}-[A-Za-z]{3}-\d{4} \d{2}:\d{2}:\d{2}\.\d{3}|\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \S+
+  max_continuation_lines: 2000
+  max_block_bytes: 1000000
+status: draft
+note: 台架军令状用(descform 引擎主路径);级别含 JULI 本地化词(信息/警告/
+  严重)与 log4j 英文级,不枚举,原样进 norm.level;thread 仅 JULI 有,
+  不在归一白名单,自动落 extras.thread(不丢数据);log4j 行无年份,
+  归一 ts 落 1900 年(引擎对无年份格式的既定契约,如实不猜)。

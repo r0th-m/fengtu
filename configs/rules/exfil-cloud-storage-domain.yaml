@@ -1,0 +1,31 @@
+# 数据外泄:网盘/文件传输服务域名实体(公开服务类别名,非样本特指)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移(实体层落地);
+# 树庭裸键=eq(实体规则裸键语义,见 internal/review/rule.go),
+# 域名特征清单逐字保留。
+id: exfil-cloud-storage-domain
+title: 网盘/文件传输服务域名实体
+severity: medium
+target: entity
+match:
+  entity_type: [domain]
+  raw_value_contains:
+    - pan.baidu
+    - baidupcs
+    - weiyun
+    - aliyundrive
+    - quark.cn
+    - 123pan
+    - cowtransfer
+    - wetransfer
+    - mega.nz
+    - dropbox
+    - terabox
+    - gofile.io
+    - transfer.sh
+    - file.io
+    - pixeldrain
+note: >-
+  域名实体命中常见网盘/文件传输服务的公开域名特征(百度网盘/微云/
+  阿里/夸克/123 盘/奶牛快传/wetransfer/mega/dropbox/gofile 等)——
+  数据外泄常用通道的实体层标注,medium 级待审;企业自用网盘属正常,
+  由人结合外联与上传量判定。

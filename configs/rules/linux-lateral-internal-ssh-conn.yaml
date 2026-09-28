@@ -1,0 +1,17 @@
+# Linux 横向:内网 SSH 互连(跳板候选,low 级)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;_prefix 两附录 A 同款;
+# 172.16/12 前缀无法精确表达,树庭原样未纳入,如实保持。
+id: linux-lateral-internal-ssh-conn
+title: 内网 SSH 出站连接(跳板候选)
+severity: low
+target: any
+match:
+  remote_port_eq: ["22"]
+  state_eq: [established]
+  remote_addr_prefix: ["10.", "192.168."]
+note: >-
+  net_connection 中本机主动向内网地址(10.0.0.0/8、192.168.0.0/16)
+  的 22 端口已建立连接——本机当跳板继续内跳的候选。运维互访/批量
+  管理/ansible 是常态,low 级待审,价值在与登录账、隧道工具互证。
+  (丰图 net_connection 面来自 Windows netstat 快照,语义同形;
+  LinuxSC conntrack 面接入后同规则自动覆盖。)

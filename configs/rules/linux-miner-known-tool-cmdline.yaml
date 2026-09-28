@@ -1,0 +1,12 @@
+# Linux 挖矿:知名开源矿工进程名(命令行匹配,非样本哈希)
+id: linux-miner-known-tool-cmdline
+title: 知名矿工进程名(命令行)
+severity: high
+target: any
+match:
+  source_eq: [ps_auxwwf]
+  command_contains: [xmrig, minerd, cpuminer, cgminer, ethminer]
+note: >-
+  进程命令行中出现知名开源/半开源挖矿程序名。按命令行子串匹配——
+  同名正常软件与仿冒路径存在理论可能,由人看路径与参数复核。
+  与矿池端口连接、stratum 地址、exe 落点多视角互证后定论。

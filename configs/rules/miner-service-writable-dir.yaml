@@ -1,0 +1,22 @@
+# 挖矿/通用:服务映像落在可写目录(SYSTEM hive 服务项)
+# 0.22.0-treecourt-port 自树庭 miner-service-writable-dir 迁移:
+# 树庭锚 registry_service.image_path(专题) → 丰图锚 registry_value
+# (SYSTEM hive 通用遍历):key_path 限 \services\ 键位 + value_name 限
+# ImagePath + data 可写目录子串,三条件 AND 表达同一语义;签名值零缩水。
+id: miner-service-writable-dir
+title: 服务映像在可写/用户目录
+severity: medium
+target: any
+match:
+  key_path_contains: ['\services\']
+  value_name_eq: [ImagePath]
+  data_contains:
+    - '\appdata\'
+    - '\temp\'
+    - '\tmp\'
+    - '\programdata\'
+    - '\public\'
+note: >-
+  服务项的 ImagePath 指向 AppData/Temp/ProgramData/Public 等可写
+  目录——挖矿/木马以服务形态常驻可写目录的通用手法(合法软件也有,
+  medium 级待审)。与 Run 键/计划任务的可写目录规则互补成「三处持久化」面。

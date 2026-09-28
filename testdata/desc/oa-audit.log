@@ -1,0 +1,6 @@
+2024-05-01 08:00:01 alice login web-console success
+2024-05-01 08:01:02 bob export 报表 月度 ok
+
+2024-05-01 08:02 badline
+2024-13-45 99:99:99 carol delete file-x fail
+not a log line at all

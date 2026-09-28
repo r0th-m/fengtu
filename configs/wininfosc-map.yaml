@@ -1,0 +1,636 @@
+# WinInfoSC 采集包结构映射表(数据,不是代码——新增采集项只改本文件)。
+#
+# 依据:WinInfoSC 采集规范(LINUXSC_SPEC.md 同款纪律的 Windows 侧):
+#   - 包根:Forensic_<IP>_<主机名>/
+#   - Windows_logs/*.evtx:全量事件日志(evtx 二进制 → sidecar 路由)
+#   - REG_*.txt:注册表键值快照(reg query 导出文本)
+#   - WMIC_*:WMIC 快照(txt/html);tasklist_*/driverquery/usn_journal_*.csv:CSV 快照
+#   - Prefetch/*.pf、MFT.bin、SAM/SECURITY/SOFTWARE/SYSTEM/NTUSER.DAT(hive,
+#     无扩展名)、*.lnk、usn_journal_*.csv:M3 树庭面原生解析(route=native)
+#   - _HASH_MANIFEST.txt / _COLLECTION_TIME.txt / _COLLECT_ERRORS.log:
+#     采集元信息(哈希清单的自动校验是后续切片,本切片登记留证)
+#
+# 防过拟合纪律:规则只写「采集包规范的结构特征」(目录名/文件名模式),
+# 不出现任何具体主机/IP/案件值。
+#
+# 匹配语义见 internal/ingest/mapping.go:首条命中即停;含 / 的模式匹配
+# 包内相对路径,否则只匹配文件名;无命中 → 兜底 raw + artifact=unmapped。
+
+name: wininfosc-v1
+title: WinInfoSC/LinuxSC 采集包结构映射(M0 + 0.32.0-linuxsc)
+# 包根双族:Forensic_<IP>_<主机名>(WinInfoSC)/ LinuxSC_<IP>_<主机名>
+# (LinuxSC;主机名段可含连字符,如 test-VMware-Virtual-Platform)。
+package_root_regex: ^(Forensic|LinuxSC)_[^_/]+_[^/]+$
+# 主机标识提取(一案多包,§3 修正稿):包根目录名 <族>_<IP>_<主机名>
+# 的 IP 段为主机键;同一主机多次采包归并到同一主机。strata 同语义,
+# 新增采集端只改本文件,不改代码。
+host_regex: ^(?:Forensic|LinuxSC)_(?P<host>[^_/]+)_[^/]+$
+
+rules:
+  # 事件日志:evtx 二进制 → sidecar(evtx_dump)→ jsonl → 统一管线
+  - match: Windows_logs/*.evtx
+    artifact: windows_event_log
+    route: evtx_native
+
+  # ---- M3 树庭面原生解析(internal/parsers;规则是数据,新增采集项只改本文件) ----
+  # USN Journal CSV(须在 *.csv 兜底之前;log_type=usn_journal 接入
+  # host-time-cluster 算子适用域)
+  - match: usn_journal_*.csv
+    artifact: usn_journal
+    route: native
+    parser: usn_csv
+    log_type: usn_journal
+  # $MFT(采集端命名 MFT.bin,包根)
+  - match: MFT.bin
+    artifact: mft
+    route: native
+    parser: mft
+  # Prefetch
+  - match: Prefetch/*.pf
+    artifact: prefetch
+    route: native
+    parser: prefetch
+  # 注册表 hive(无扩展名,包根):
+  #   SAM/SECURITY → 专题解析(M3b;通用 kv 对这两 hive 只有 F/V、Policy
+  #     不透明 blob 的 hex,无独立证据价值,树庭同款口径)
+  #   SYSTEM → 复合(通用遍历 + Shimcache 专题,一管双出,见
+  #     internal/parsers/system_hive.go)
+  #   SOFTWARE/DEFAULT/用户 hive → 通用键值遍历(M3)
+  - match: SAM
+    artifact: registry_hive
+    route: native
+    parser: sam_accounts
+  - match: SECURITY
+    artifact: registry_hive
+    route: native
+    parser: security_policy
+  - match: SOFTWARE
+    artifact: registry_hive
+    route: native
+    parser: registry_hive
+  - match: SYSTEM
+    artifact: registry_hive
+    route: native
+    parser: system_hive
+  - match: DEFAULT
+    artifact: registry_hive
+    route: native
+    parser: registry_hive
+  # 用户 hive(WinInfoSC 收集在包内任意子目录,按文件名接)
+  - match: NTUSER.DAT
+    artifact: registry_hive
+    route: native
+    parser: registry_hive
+  - match: NTUSER.dat
+    artifact: registry_hive
+    route: native
+    parser: registry_hive
+  - match: UsrClass.dat
+    artifact: registry_hive
+    route: native
+    parser: registry_hive
+  # 快捷方式(Recent 等任意位置)
+  - match: "*.lnk"
+    artifact: lnk
+    route: native
+    parser: lnk
+
+  # ---- M3b 新增源(全量补齐;文件名为采集规范固定大小写) ----
+  # Everything 文件清单(包根;行级 file_listing_entry 流式事件 + summary)
+  - match: "*.efu"
+    artifact: everything_efu
+    route: native
+    parser: efu
+  # JumpList(CFB 容器 automatic / 纯条目 custom;须在 *.ms 类兜底之前)
+  - match: "*.automaticDestinations-ms"
+    artifact: jumplist
+    route: native
+    parser: jumplist
+  - match: "*.customDestinations-ms"
+    artifact: jumplist
+    route: native
+    parser: jumplist
+  # 浏览器历史(Chromium 家族:Edge/Chrome/Webview2 的 History 文件;
+  # 无扩展名,schema 自描述——非 Chromium 库打开即如实 failed)
+  - match: History
+    artifact: browser_history
+    route: native
+    parser: browser_chromium_history
+  - match: places.sqlite
+    artifact: browser_history
+    route: native
+    parser: browser_firefox_places
+  # SRUM(ESE 数据库,包根)
+  - match: SRUDB.dat
+    artifact: srum
+    route: native
+    parser: srum
+  # Windows 时间线(每用户 ActivitiesCache.db;须在 *.db 类兜底之前)
+  - match: ActivitiesCache.db
+    artifact: activitiescache
+    route: native
+    parser: win_activities
+
+  # 采集元信息
+  - match: _HASH_MANIFEST.txt
+    artifact: hash_manifest
+    route: raw
+  - match: _COLLECTION_TIME.txt
+    artifact: collection_meta
+    route: raw
+  - match: _COLLECT_ERRORS.log
+    artifact: collection_errors
+    route: raw
+
+  # ---- 0.25.0-datasource-unlock 新增源(须在 *.txt 兜底之前) ----
+  # PowerShell 命令历史(PSReadLine 契约:一行一命令,无时间戳 ts 恒 nil)
+  - match: PSHistory/ConsoleHost_history.txt
+    artifact: command_history
+    route: desc
+    desc: pshistory
+  # 网络连接快照(netstat -ano[b] 文本;采集规范固定文件名,中英文
+  # 表头/GBK 由解析器内部消化,见 internal/parsers/netstat.go)
+  - match: netstat.txt
+    artifact: net_connection
+    route: native
+    parser: netstat
+    log_type: net_connection
+  - match: netstat_established.txt
+    artifact: net_connection
+    route: native
+    parser: netstat
+    log_type: net_connection
+
+  # 注册表快照(reg query 导出文本;REG_ 前缀是采集脚本命名约定)
+  - match: REG_*.txt
+    artifact: registry_query
+    route: raw
+
+  # WMIC / 系统快照
+  - match: WMIC_*
+    artifact: wmic_snapshot
+    route: raw
+
+  # ==================== 0.32.0-linuxsc:LinuxSC 采集包 ====================
+  # 目录名为采集脚本固定大写(Logs/Network/ProcInfo/Persistence/SSH/
+  # SystemInfo/RootkitHunt/RecoveredBinaries);语义基准 = 树庭
+  # backend/app/parsers/linux_*.py,解析器见 internal/parsers/linux_*.go。
+  # 须在 *.txt/*.log 兜底之前。raw 兜底的语义:该产物暂无原生解析器
+  # (应急价值×解析难度排序后的暂缓项,清单见 docs/operator-inventory.md),
+  # 原文登记可检索,不丢。
+
+  # ---- 认证/系统日志面 ----
+  - match: Logs/var/log/auth.log
+    artifact: auth_log
+    route: native
+    parser: linux_authlog
+    log_type: audit_log
+  - match: Logs/var/log/secure
+    artifact: auth_log
+    route: native
+    parser: linux_authlog
+    log_type: audit_log
+  - match: Logs/var/log/messages
+    artifact: syslog
+    route: native
+    parser: linux_syslog
+    log_type: app_log
+  - match: Logs/var/log/syslog
+    artifact: syslog
+    route: native
+    parser: linux_syslog
+    log_type: app_log
+  - match: Logs/var/log/cron
+    artifact: syslog
+    route: native
+    parser: linux_syslog
+    log_type: app_log
+  - match: Logs/var/log/yum.log
+    artifact: pkg_log
+    route: native
+    parser: linux_yumlog
+    log_type: audit_log
+  - match: Logs/var/log/dpkg.log
+    artifact: pkg_log
+    route: desc
+    desc: linux-dpkg
+  - match: Logs/var/log/dpkg.log.1
+    artifact: pkg_log
+    route: desc
+    desc: linux-dpkg
+  - match: Logs/journalctl_full_shortiso.txt
+    artifact: journal_export
+    route: native
+    parser: linux_journal_full
+    log_type: app_log
+  - match: Logs/journalctl_sshd_unit.txt
+    artifact: journal_export
+    route: native
+    parser: linux_journal_short
+    log_type: app_log
+  - match: Logs/journalctl_xe.txt
+    artifact: journal_export
+    route: native
+    parser: linux_journal_short
+    log_type: app_log
+  - match: Logs/last.txt
+    artifact: login_history
+    route: native
+    parser: linux_last
+    log_type: audit_log
+  - match: Logs/lastb.txt
+    artifact: login_history
+    route: native
+    parser: linux_last
+    log_type: audit_log
+  - match: Logs/lastlog.txt
+    artifact: login_history
+    route: native
+    parser: linux_lastlog
+    log_type: audit_log
+
+  # ---- 网络面(ss/netstat 双采同 net_connection 品类,与 Windows
+  # netstat 快照同形,存量 net_connection 规则自动覆盖) ----
+  - match: Network/ss_tuanp.txt
+    artifact: net_connection
+    route: native
+    parser: linux_ss
+    log_type: net_connection
+  - match: Network/netstat_tuanp.txt
+    artifact: net_connection
+    route: native
+    parser: linux_netstat
+    log_type: net_connection
+  - match: Network/conntrack_L.txt
+    artifact: conntrack
+    route: native
+    parser: linux_conntrack
+
+  # ---- 账户面 ----
+  - match: SystemInfo/etc/passwd
+    artifact: local_account
+    route: native
+    parser: linux_passwd
+  - match: SystemInfo/etc/group
+    artifact: local_group
+    route: native
+    parser: linux_group
+
+  # ---- 持久化面 ----
+  - match: Persistence/crontab_all_users.txt
+    artifact: scheduled_task
+    route: native
+    parser: linux_cron_all
+  - match: Persistence/etc/crontab
+    artifact: scheduled_task
+    route: native
+    parser: linux_cron_sys
+  - match: Persistence/etc/cron.d/*
+    artifact: scheduled_task
+    route: native
+    parser: linux_cron_sys
+  - match: Persistence/etc/anacrontab
+    artifact: scheduled_task
+    route: native
+    parser: linux_anacrontab
+  - match: Persistence/var/spool/cron/crontabs/*
+    artifact: scheduled_task
+    route: native
+    parser: linux_cron_spool
+  - match: Persistence/var/spool/cron/*
+    artifact: scheduled_task
+    route: native
+    parser: linux_cron_spool
+  # systemd 单元(按文件名后缀接,Persistence 镜像内任意层级;
+  # Windows 包无此后缀,无冲突)
+  - match: "*.service"
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd
+  - match: "*.timer"
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd
+  - match: "*.socket"
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd
+  - match: "*.target"
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd
+  - match: "*.mount"
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd
+  - match: "*.path"
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd
+  - match: "*.automount"
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd
+  - match: "*.slice"
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd
+  - match: "*.scope"
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd
+  # systemd drop-in(*.d/*.conf;须在通配 *.conf 类兜底语义出现前——
+  # 本表无 *.conf 兜底,这几条是精确目录)
+  - match: Persistence/etc/systemd/system/*.d/*.conf
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd_dropin
+  - match: Persistence/usr/lib/systemd/system/*.d/*.conf
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd_dropin
+  - match: Persistence/lib/systemd/system/*.d/*.conf
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd_dropin
+  - match: Persistence/run/systemd/system/*.d/*.conf
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd_dropin
+  - match: Persistence/etc/systemd/user/*.d/*.conf
+    artifact: systemd_unit
+    route: native
+    parser: linux_systemd_dropin
+  # udev 规则(Windows 包无 .rules 后缀)
+  - match: "*.rules"
+    artifact: udev_rule
+    route: native
+    parser: linux_udev
+  - match: Persistence/etc/pam.d/*
+    artifact: pam_rule
+    route: native
+    parser: linux_pam
+  # shell 配置(系统级 + 用户级;含 .bash_logout 易忽略面)
+  - match: Persistence/etc/profile
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/etc/profile.d/*
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/etc/bashrc
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/etc/bash.bashrc
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/etc/zshrc
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/etc/zsh/*
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/root/.bashrc
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/root/.bash_profile
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/root/.bash_login
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/root/.profile
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/root/.bash_logout
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/root/.zshrc
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/home/*/.bashrc
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/home/*/.bash_profile
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/home/*/.bash_login
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/home/*/.profile
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/home/*/.bash_logout
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+  - match: Persistence/home/*/.zshrc
+    artifact: shell_config
+    route: native
+    parser: linux_shellcfg
+
+  # ---- SSH 面(authorized_keys 两档深度:root 直挂 + home/<用户>) ----
+  - match: SSH/root/.ssh/authorized_keys
+    artifact: ssh_key
+    route: native
+    parser: linux_authkeys
+  - match: SSH/root/.ssh/authorized_keys2
+    artifact: ssh_key
+    route: native
+    parser: linux_authkeys
+  - match: SSH/home/*/.ssh/authorized_keys
+    artifact: ssh_key
+    route: native
+    parser: linux_authkeys
+  - match: SSH/home/*/.ssh/authorized_keys2
+    artifact: ssh_key
+    route: native
+    parser: linux_authkeys
+  - match: SSH/etc/ssh/sshd_config
+    artifact: sshd_config
+    route: native
+    parser: linux_sshd_config
+  - match: SSH/sshd_T_effective_config.txt
+    artifact: sshd_config
+    route: native
+    parser: linux_sshd_effective
+  - match: SSH/ldd_sshd.txt
+    artifact: sshd_lib_deps
+    route: native
+    parser: linux_sshd_libs
+  - match: SSH/user_ssh_dir_permissions.txt
+    artifact: ssh_dir_perm
+    route: native
+    parser: linux_ssh_dir_perms
+
+  # ---- RootkitHunt / 回收样本面 ----
+  - match: RootkitHunt/ebury_ioc_libs.txt
+    artifact: ebury_ioc
+    route: native
+    parser: linux_ebury_ioc
+  - match: RecoveredBinaries/_no_hits.txt
+    artifact: recovered_binary
+    route: native
+    parser: linux_recovered_nohits
+  # (须在 *.bin 兜底之前)
+  - match: RecoveredBinaries/*.bin
+    artifact: recovered_binary
+    route: native
+    parser: linux_recovered
+
+  # ---- 进程面 ----
+  - match: ProcInfo/ps_auxwwf.txt
+    artifact: process_snapshot
+    route: native
+    parser: linux_ps
+  - match: ProcInfo/proc_cmdline_comm_exe_compare.txt
+    artifact: proc_identity
+    route: native
+    parser: linux_proc_identity
+  - match: ProcInfo/shm_tmp_listing.txt
+    artifact: shm_tmp_listing
+    route: native
+    parser: linux_shmtmp
+  - match: ProcInfo/lsof_deleted_open.txt
+    artifact: deleted_file_suspect
+    route: native
+    parser: linux_lsof_deleted
+  - match: ProcInfo/proc_exe_deleted.txt
+    artifact: deleted_file_suspect
+    route: native
+    parser: linux_proc_exe_deleted
+  - match: ProcInfo/proc_fd_memfd.txt
+    artifact: deleted_file_suspect
+    route: native
+    parser: linux_proc_fd_memfd
+  - match: ProcInfo/proc_maps_suspicious_exec.txt
+    artifact: deleted_file_suspect
+    route: native
+    parser: linux_proc_maps
+
+  # ---- LinuxSC 采集元信息/未接面兜底 ----
+  # 已知但暂缓解析的持久化面(原文登记可检索;解析器化在后续切片,
+  # 树庭对应 parser:init_script/rc_link/desktop_autostart/periodic_script/
+  # ldso_conf/modprobe——规则无锚定,raw 不丢证据):
+  - match: Persistence/etc/init.d/*
+    artifact: init_script
+    route: raw
+  - match: Persistence/etc/rc.d/init.d/*
+    artifact: init_script
+    route: raw
+  - match: Persistence/etc/rc?.d/*
+    artifact: rc_link
+    route: raw
+  - match: Persistence/etc/rc.d/rc?.d/*
+    artifact: rc_link
+    route: raw
+  - match: Persistence/etc/xdg/autostart/*
+    artifact: xdg_autostart
+    route: raw
+  - match: Persistence/home/*/.config/autostart/*
+    artifact: xdg_autostart
+    route: raw
+  - match: Persistence/etc/cron.daily/*
+    artifact: periodic_script
+    route: raw
+  - match: Persistence/etc/cron.hourly/*
+    artifact: periodic_script
+    route: raw
+  - match: Persistence/etc/cron.weekly/*
+    artifact: periodic_script
+    route: raw
+  - match: Persistence/etc/cron.monthly/*
+    artifact: periodic_script
+    route: raw
+  - match: Persistence/etc/update-motd.d/*
+    artifact: periodic_script
+    route: raw
+  - match: Persistence/etc/ld.so.conf
+    artifact: ldso_conf
+    route: raw
+  - match: Persistence/etc/ld.so.conf.d/*
+    artifact: ldso_conf
+    route: raw
+  - match: Persistence/etc/modprobe.d/*
+    artifact: kernel_module_conf
+    route: raw
+  - match: Persistence/etc/modules-load.d/*
+    artifact: kernel_module_conf
+    route: raw
+  - match: Persistence/etc/modules
+    artifact: kernel_module_conf
+    route: raw
+  - match: Network/etc/resolv.conf
+    artifact: resolver
+    route: raw
+  - match: Persistence/etc/rc.local
+    artifact: rc_local
+    route: raw
+  - match: Persistence/etc/rc.d/rc.local
+    artifact: rc_local
+    route: raw
+  - match: Persistence/var/spool/anacron/*
+    artifact: anacron_spool
+    route: raw
+  - match: Persistence/var/spool/at/*
+    artifact: at_spool
+    route: raw
+  - match: _COLLECT_FOOTPRINT.txt
+    artifact: collection_meta
+    route: raw
+  - match: _SYMLINKS.txt
+    artifact: collection_meta
+    route: raw
+  # /var/log 镜像的其余文件(wtmp/btmp/faillog/lastlog 二进制、audit.log、
+  # journal 二进制目录、轮转 *.gz)——登记不解析(暂缓项见 operator-inventory)
+  - match: Logs/var/log/*
+    artifact: linux_log_file
+    route: raw
+  - match: Logs/var/log/*/*
+    artifact: linux_log_file
+    route: raw
+  - match: Logs/var/log/*/*/*
+    artifact: linux_log_file
+    route: raw
+
+  # WMIC / 其余扩展名兜底(原契约不变)
+  - match: "*.csv"
+    artifact: csv_snapshot
+    route: raw
+  - match: "*.html"
+    artifact: html_snapshot
+    route: raw
+  - match: "*.txt"
+    artifact: text_snapshot
+    route: raw
+  - match: "*.log"
+    artifact: log_snapshot
+    route: raw
+  - match: "*.reg"
+    artifact: registry_export
+    route: raw
+
+  # 二进制取证件(其余:M3 已接 PF/MFT/hive/lnk;M3b 已接 EFU/JumpList/
+  # 浏览器 History/places.sqlite/SRUM/ActivitiesCache;剩余二进制登记不解析)
+  - match: "*.bin"
+    artifact: binary_artifact
+    route: raw
+  - match: "*.dat"
+    artifact: binary_artifact
+    route: raw
+

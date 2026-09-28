@@ -1,0 +1,21 @@
+# 链式:驻留链(4698/4702 计划任务创建/变更,任务名 vs 动作路径名实不符→置疑)。
+# 两翼模式都是 spec 数据:「名」像系统/厂商维护任务,「实」落临时目录或
+# 脚本解释器——类目是结构,不是案件值。
+id: host-persistence-task
+title: 计划任务名实不符(4698/4702)
+family: host
+severity: medium
+applicable_to:
+  log_types: [windows_event_log]
+params:
+  events: ["4698", "4702"]
+  benign_name_patterns:
+    - '(?i)(microsoft|windows|google|adobe|intel|nvidia)'
+  suspicious_exec_patterns:
+    - '(?i)\\(temp|tmp)\\'
+    - '(?i)\\users\\public\\'
+    - '(?i)\\appdata\\(local|roaming)\\temp\\'
+    - '(?i)\b(powershell(\.exe)?|cmd\.exe|wscript\.exe|cscript\.exe|mshta\.exe|rundll32\.exe|regsvr32\.exe)\b'
+implemented: true
+note: 置疑不是结论——先查任务创建人与软件分发通道(SCCM/域管推送也建任务)
+max_hits: 500

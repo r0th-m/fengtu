@@ -1,0 +1,16 @@
+# 横向移动:远程管理端口上的已建立连接(本机被连/本机外跳)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;树庭裸键=eq → _eq,
+# 端口集逐字保留(树庭 description 提到的 remote_port 同集未落 match,
+# 如实保持原样,不替源加条件)。
+id: lateral-admin-port-connection
+title: 远程管理端口已建立连接(445/3389/5985)
+severity: medium
+target: any
+match:
+  local_port_eq: ["445", "3389", "5985", "5986"]
+  state_eq: [established]
+note: >-
+  net_connection 本地端口为 445/3389/5985/5986 且 ESTABLISHED——有机器
+  正连着本机的 SMB/RDP/WinRM(横向进入候选);或本机主动连对端管理
+  端口(横向外跳候选,remote_port 同集)。域控/文件共享正常流量多,
+  medium 级待审,由人结合登录事件判定。

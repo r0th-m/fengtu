@@ -1,0 +1,102 @@
+# 勒索前置排查·意图链模板(0.22.0-treecourt-port;由树庭
+# ransomware-precursor-v1 手册蒸馏为意图树——前置行为链:删影留痕 →
+# 可疑进程执行 → 批量加密 → ransom note → 持久化;发现链:批量改动/
+# SRUM/勒索信意图消费前序发现的时间窗与 IOC)
+id: ransomware-precursor
+version: 1
+title: 勒索前置排查(意图链模板)
+description: >-
+  勒索软件前置行为排查:删影留痕(命令行历史/4688)、可疑进程执行链、
+  时间窗内大批量文件改动(EFU 逐小时聚合 + MFT 行级)、SRUM 异常写、
+  ransom note 文件名反查、持久化落脚点。数据缺失如实报「数据未覆盖」,
+  不硬编。
+os: windows
+goal: >-
+  在加密完成前识别勒索前置动作:先断恢复后路(删影)是最强前置信号,
+  批量文件改动是最硬手感;每条证据锚到事件,判断权归人。
+intents:
+  - key: pshistory
+    host_scope: each
+    text: 命令行历史里有没有删影/破坏备份/加密前奏命令?
+    ask: >-
+      勒索的第一步往往是先断后路:翻命令行历史找删影留痕——vssadmin
+      delete shadows、wmic shadowcopy delete、bcdedit 改启动恢复
+      (RecoveryEnabled No)、wbadmin delete catalog、vssadmin resize
+      shadowstorage 压到最小;也顺手看加密前奏:批量重命名、cipher /w
+      擦空闲空间。每条指出哪一行、为什么可疑;正常运维命令别报;
+      该通道未采集如实报未覆盖。
+  - key: eventlog_cmds
+    host_scope: each
+    text: 4688 里有没有删影命令、1102 清日志(谁、什么时候、前后动作)?
+    ask: >-
+      对一遍日志的账:4688 进程创建里找 vssadmin/wmic/bcdedit/wbadmin
+      命令行,谁发起的、父进程是谁;1102 安全日志清除是重点中的重点——
+      谁在什么时候清的,清日志前后有什么动作;4672 特权分配里陌生账户
+      拿特权也拎出来。可跑 ransom-shadow-delete-cmdline 与
+      ransom-security-log-cleared 规则命中再核实锚点。
+  - key: process_chain
+    host_scope: each
+    text: 进程快照与执行痕迹里有没有勒索落地常见路数?
+    ask: >-
+      看执行面:进程快照 + UserAssist/Shimcache 执行痕迹对着看。勒索
+      落地常见路数:可写目录(Temp/AppData/Public)里的陌生可执行文件、
+      仿冒系统进程名、名字随机、只跑过一两回的。办公与系统正常软件
+      别报,报了要说得清哪里不对。
+  - key: mass_changes
+    after: [eventlog_cmds, process_chain]
+    host_scope: each
+    text: 时间窗内有没有大批量文件改动(批量加密特征:改动陡增/同一陌生后缀)?
+    ask: >-
+      勒索最硬的手感是「短时间大量文件被动过」:按前序时间窗看 EFU
+      改动按小时聚合计数与扩展名分布、行级明细(EFU 现有 + MFT 含已
+      删除)——有没有某一两个小时改动数陡增?有没有大批文件被改成
+      同一个陌生后缀(加密改名)或原名不动只改内容(就地加密)?MFT
+      里窗内「落地又被删」的重点看。窗口拉不出来或数据不支持的方向
+      如实说,别硬凑。可跑 host-time-cluster 算子再核实锚点。
+  - key: srum_writes
+    after: [mass_changes]
+    host_scope: each
+    text: SRUM 异常写与资源占用能不能印证前序可疑进程?
+    ask: >-
+      拿 SRUM 印证:写盘量 Top 应用里有没有和前序可疑进程对得上的——
+      勒索加密是密集读写,陌生进程写盘量压过浏览器办公软件就不对劲;
+      可疑进程在时间窗内的网络用量一并看,对不上如实说。
+  - key: ransom_notes
+    after: [mass_changes]
+    host_scope: each
+    text: 有没有勒索信文件名特征(README/HOW_TO_DECRYPT 类铺满各目录的小文本)?
+    ask: >-
+      找勒索信:用前序 IOC 反查事件和文件清单,留意典型勒索信文件名
+      特征——README/HOW_TO_DECRYPT/DECRYPT_INSTRUCTION/RECOVER 类
+      铺满各目录的小文本,以及桌面/根目录下成批同名的 txt 或 hta。
+      查到给路径,查不到就明说没查到,不许编文件名。
+  - key: persistence
+    after: [process_chain]
+    host_scope: each
+    text: 持久化三处(计划任务/Run 键/服务)有没有勒索留门?
+    ask: >-
+      最后看它留没留后门:计划任务、Run 键、服务三处,盯指向可写目录
+      的可执行文件、仿冒系统名的任务/服务名、SYSTEM 权限跑来路不明的
+      程序;三处指向同一目标的优先说。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的)
+  - key: independent_review
+    after: [srum_writes, ransom_notes, persistence]
+    host_scope: all
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: coverage_gate
+    after: [srum_writes, ransom_notes, persistence, pshistory, independent_review]
+    host_scope: all
+    text: 覆盖闸收官:哪些品类查过、哪些没查过,还有没有未核实的疑点?
+    ask: >-
+      收官宣告:对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默;
+      未核实疑点列成清单交给人。覆盖不全如实标,不硬编结论。

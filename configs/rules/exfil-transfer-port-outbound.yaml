@@ -1,0 +1,14 @@
+# 数据外泄:文件传输协议端口外联(FTP/SFTP/TFTP/rsync,low 级)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移(netstat 事件化落地);
+# 树庭裸键=eq → 丰图 _eq 后缀,端口集逐字保留。
+id: exfil-transfer-port-outbound
+title: 文件传输协议端口外联
+severity: low
+target: any
+match:
+  remote_port_eq: ["20", "21", "69", "873", "989", "990"]
+  state_eq: [established]
+note: >-
+  net_connection 远端端口命中文件传输协议端口(20/21 FTP、69 TFTP、
+  873 rsync、989/990 FTPS)且连接已建立——外泄通道候选,这些协议在内网
+  运维也常见,low 级待审,价值在与压缩/上传痕迹互证。

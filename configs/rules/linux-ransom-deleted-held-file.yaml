@@ -1,0 +1,15 @@
+# Linux 勒索:成批文件被删除仍被进程持有(就地加密残影)
+id: linux-ransom-deleted-held-file
+title: 已删除仍被持有的普通文件(就地加密残影候选)
+severity: low
+target: any
+match:
+  source_eq: [lsof_deleted_open]
+  type_eq: [REG]
+  nlink_eq: ["0"]
+  name_prefix: ["/"]
+note: >-
+  lsof +L1 中 nlink=0 的已删除普通文件(REG 且绝对路径)仍被进程
+  持有——勒索「读原文件→删→写密文」的就地加密会留下这类残影。
+  合法场景存在(日志轮转、临时文件),价值在成批同目录出现时与加密
+  进程互证;memfd/txt 类由内存马链规则覆盖,不重复报。

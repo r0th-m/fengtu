@@ -1,0 +1,10 @@
+孤儿续行在前(无宿主)
+04-27 16:26:48 INFO  com.example.App - started
+	at com.example.App.main(App.java:10)
+04-27 16:26:49 ERROR com.example.Db - query failed
+java.sql.SQLException: boom
+	at com.example.Db.q(Db.java:42)
+
+04-27 16:26:50 WARN  com.example.Cache - low
+04-27 bad:xx INFO x - y
+99-99 99:99:99 INFO com.x - bad ts start line

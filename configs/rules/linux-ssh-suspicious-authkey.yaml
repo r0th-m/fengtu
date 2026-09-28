@@ -1,0 +1,15 @@
+# Linux:authorized_keys 公钥结构风险(解析器 risk_flags 直通)
+# 「这把钥匙认不认识」是归因判断,规则引擎不做;解析器只对结构特征打标。
+id: linux-ssh-suspicious-authkey
+title: authorized_keys 公钥结构风险(弱钥/强制命令/注释不可归因)
+severity: high
+target: any
+match:
+  risk_flags_contains: [weak_key, forced_command, placeholder_comment, unattributable_comment]
+note: >-
+  authorized_keys 公钥命中解析器结构风险标(risk_flags):weak_key(RSA/DSA
+  ≤1024 位,低于通用基线)、forced_command(带 command= 强制命令限定,
+  合法备份场景常用但须确认内容)、placeholder_comment(注释 host 段为
+  hostname/localhost/test 等占位符,模板机生成,来源不可归因)、
+  unattributable_comment(注释非 user@host 形态)。后门公钥常以弱钥或
+  占位符注释混入;命中≠实锤,由人结合属主账户、钥匙来源与登录日志定论。

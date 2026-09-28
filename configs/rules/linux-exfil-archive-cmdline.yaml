@@ -1,0 +1,11 @@
+# Linux 外泄:压缩打包命令行(外泄前的收集动作,low 级)
+id: linux-exfil-archive-cmdline
+title: 压缩打包(进程命令行)
+severity: low
+target: any
+match:
+  source_eq: [ps_auxwwf]
+  command_contains: ["tar cz", "tar -cz", "zip -r", "7z a", "rar a"]
+note: >-
+  进程命令行中出现压缩打包动作。日常备份极常见——盯打包源是业务数据
+  目录、输出到 /tmp//dev/shm 的,与上传命令行/传输端口连接互证后升级。

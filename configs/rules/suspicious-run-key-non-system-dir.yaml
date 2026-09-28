@@ -1,0 +1,22 @@
+# 可疑 Run 键自启动:指向可写/用户目录的可执行路径(通用行为,不写样本特指值)
+# 0.22.0-treecourt-port 自树庭 suspicious-run-key-non-system-dir 迁移:
+# 树庭锚 autostart_entry.value(专题解析器) → 丰图锚 registry_value
+# (hive 通用遍历):key_path 限 Run/RunOnce 键位 + data(值数据)可写目录
+# 子串,双条件 AND 表达同一语义;签名值零缩水。
+id: suspicious-run-key-non-system-dir
+title: 可疑 Run 键自启动(可写/用户目录路径)
+severity: medium
+target: any
+match:
+  key_path_contains: ['\currentversion\run']
+  data_contains:
+    - '\appdata\'
+    - '\temp\'
+    - '\tmp\'
+    - '\programdata\'
+    - '\public\'
+    - '\users\'
+note: >-
+  Run 键自启动项的取值指向 AppData / Temp / ProgramData / Public / Users 等
+  可写或用户目录,是常见的落地持久化手法(合法软件也可能如此安装,故为
+  medium 级待审,由人判定)。

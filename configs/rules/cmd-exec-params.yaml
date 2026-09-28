@@ -1,0 +1,29 @@
+# 索图规则资产迁移(2026-09-25 对照表 §2.2,语义不变,签名内容未缩水;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜;scanner-ua 已同法迁移)
+# 命令执行/代码执行:高危函数调用与命令参数族
+id: cmd-exec-params
+title: 命令执行/代码执行参数特征
+severity: high
+target: any
+match:
+  query:
+    - "cmd="
+    - "exec="
+    - ";id"
+    - ";cat%20"
+    - "|id"
+    - "eval("
+    - "assert("
+    - "system("
+    - "passthru("
+    - "shell_exec("
+    - "/bin/sh"
+    - "/bin/bash"
+    - "whoami"
+note: >-
+  PHP 系代码执行函数(eval/assert/system/passthru/shell_exec)、shell 路径
+  (/bin/sh、/bin/bash)与命令拼接符(;id、|id)出现在查询串里是命令注入
+  的公开标志(OWASP Command Injection);cmd=/exec= 参数名是 webshell
+  与命令注入探测的惯用形状。whoami 单发可能误报,严重级已按族整体给 high,
+  人审时再逐条定夺(判断权归人)。

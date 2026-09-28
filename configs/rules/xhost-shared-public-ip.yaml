@@ -1,0 +1,18 @@
+# 跨主机:同一公网 IP 出现在 ≥2 台主机(私网不联动,树庭 §9.2/C4)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移(实体层落地,签名规则
+# 引用实体表);聚合只对 qualifier=global 实体,结构性排除私网。
+# 注意:与 cross-host-entity 算子(ip 型)语义重叠——算子是统计面,
+# 本规则是签名面,双路命中是刻意冗余(两路证据互证),待审按一簇看。
+id: xhost-shared-public-ip
+title: 同一公网 IP 出现在多台主机
+severity: medium
+target: entity
+match:
+  entity_type: [ip]
+  qualifier: [global]
+  min_hosts: 2
+note: >-
+  同一公网 IP 与 ≥2 台主机存在关联(网络连接/配置中出现),提示多机共同
+  回连同一外部地址。仅对 qualifier=global 的公网 IP 聚合(私网 IP 默认
+  host_scoped 不参与,防「每台 192.168.x 假联动」);多机同出口 NAT 属
+  正常噪声,故为 medium 级待审,由人判定。

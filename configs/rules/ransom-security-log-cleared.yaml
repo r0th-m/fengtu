@@ -1,0 +1,14 @@
+# 勒索前置/通用反取证:安全日志被清除(1102)
+# 0.22.0-treecourt-port 自树庭 ransom-security-log-cleared 迁移:
+# 树庭 target=eventlog_security → 丰图以 channel_eq+event_id_eq 表达同语义。
+id: ransom-security-log-cleared
+title: 安全日志被清除(1102)
+severity: high
+target: any
+match:
+  channel_eq: [Security]
+  event_id_eq: ["1102"]
+note: >-
+  Security 通道 1102(审计日志已清除)——反取证/勒索清痕的通用信号,
+  正常运维极少触发,故 high 级。命中锚定事件记录,待审区由人结合
+  前后时间窗判定。

@@ -1,0 +1,24 @@
+# 时间簇:窗口内海量写/改名(勒索加密通用信号;金标准=v1 树庭
+# efu_anomaly 滑窗语义移植到 USN 变更事件流)。
+# 数据源契约:usn_journal 品类源(desc 映射 文件名→path,原因编号→
+# extras.reason_hex;fsutil usn readjournal /csv 格式);USN 的 desc/解析
+# 路由在后续切片落地——本算子已实现并测试,适用域内无源时账上如实记
+# 「无适用域内源」。
+# reason_bits 默认 0x2307 = DATA_OVERWRITE|DATA_EXTEND|DATA_TRUNCATION|
+# FILE_CREATE|FILE_DELETE|RENAME_OLD_NAME|RENAME_NEW_NAME(winnt.h 结构
+# 常量);底噪后缀排除表是 spec 数据(v1 EXT_EXCLUDE_DEFAULT 同款语义)。
+id: host-time-cluster
+title: 时间簇(窗口内海量写/改名)
+family: host
+severity: high
+applicable_to:
+  log_types: [usn_journal]
+params:
+  window_seconds: 300
+  min_events: 100
+  reason_bits: 8967 # 0x2307
+  ext_exclude: [exe, dll, sys, log, ini, tmp, lnk, pf, etl, evtx, mui, cat,
+    man, xml, dat, pdb, cache, db]
+implemented: true
+note: 海量写/改名=加密候选,但编译/同步/备份同样可命中;对照后缀分布再定性
+max_hits: 200

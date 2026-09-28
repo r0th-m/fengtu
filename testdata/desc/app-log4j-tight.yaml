@@ -1,0 +1,18 @@
+name: app-log4j-tight
+title: 应用 log4j 日志(小合并上限,截断/孤儿块对照用合成变体)
+kind: regex
+line_regex: ^(?P<ts>\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(?P<level>[A-Z]+)\s+(?P<logger>\S+)\s+-\s+(?P<message>.*)$
+field_map:
+  ts: ts_raw
+  level: level
+  logger: logger
+  message: message
+ts_field: ts
+ts_formats:
+- '%m-%d %H:%M:%S'
+multiline:
+  start_regex: ^\d{2}-\d{2} \d{2}:\d{2}:\d{2}\s+[A-Z]+\s
+  max_continuation_lines: 3
+  max_block_bytes: 1024
+status: draft
+note: 合成变体(基于 app-log4j 收紧合并上限),专供截断/孤儿块 golden 对照,非真实样本

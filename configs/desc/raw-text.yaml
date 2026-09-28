@@ -1,0 +1,11 @@
+# 通用原文兜底(raw):逐行原文不解析字段。
+# 用于指纹无候选的文本源(如二开采集器的 txt 导出),人确认后按行入事件,
+# ts 一律 nil(无时戳行,不猜时间,如实),全文可检索,锚点=物理行号。
+name: raw-text
+title: 通用原文(raw,逐行不解析字段)
+kind: regex
+log_type: generic
+ts_optional: true
+line_regex: '^(?P<message>.*)$'
+field_map:
+  message: message

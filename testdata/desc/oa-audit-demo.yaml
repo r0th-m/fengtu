@@ -1,0 +1,12 @@
+# 示例描述文件:某 OA 审计日志(合成示例,非真实客户格式)
+# 治理状态恒 draft 出厂——外部/出厂描述文件一律人审走
+# :transition(review → enable)后才可用于解析(§4.3 判断权归人)。
+name: oa-audit-demo
+title: 某 OA 审计日志(示例)
+kind: regex
+line_regex: '^(?P<ts>\S+ \S+)\s+(?P<actor>\S+)\s+(?P<action>\S+)\s+(?P<object>.*?)\s+(?P<result>\S+)$'
+field_map: {ts: ts_raw, actor: actor, action: action, object: object, result: result}
+ts_field: ts
+ts_formats: ['%Y-%m-%d %H:%M:%S']
+status: draft
+note: 合成示例(非真实样本),仅演示 schema 与治理链;人审 enable 后才可解析

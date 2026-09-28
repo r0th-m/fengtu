@@ -1,0 +1,16 @@
+# Linux:SSHD 暴破背景下的登录成功(auth_log 面,0.32.0-linuxsc 自树庭同名迁移)
+# 分流适配:树庭靠 target=auth_log 事件面;丰图 target 只有 any|entity,
+# 改用解析器产出的 source 字段(auth_log 面恒 source=auth_log),语义等价。
+id: linux-sshd-accepted-authlog
+title: SSH 登录成功(auth_log,暴破背景复核)
+severity: high
+target: any
+match:
+  source_eq: [auth_log]
+  action_eq: [accepted]
+  src_ip_contains: ["."]
+note: >-
+  auth.log/secure 中 sshd 登录成功(action=accepted)且带来源 IP 的事件。
+  互联网面主机常年被暴破,每条成功登录都该能说清是谁、从哪来、该不该在;
+  与失败源 IP Top 对照,同一来源「先大量失败后成功」即为暴破得手。
+  聚合判断不在签名规则表达力内,复核由人做(引擎契约,与树庭同款取舍)。

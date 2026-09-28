@@ -1,0 +1,13 @@
+# Linux 挖矿:命令行里的 stratum 协议矿池地址(通用 URL 形态)
+id: linux-miner-stratum-cmdline
+title: stratum 协议矿池地址(进程命令行)
+severity: high
+target: any
+match:
+  source_eq: [ps_auxwwf]
+  command_contains: [stratum+tcp, stratum+ssl, "stratum://"]
+note: >-
+  进程命令行(ps 快照)中出现 stratum+tcp / stratum+ssl / stratum://
+  矿池协议地址——矿工连矿池的通用 URL 形态,日常运维几乎不会出现。
+  (Windows 对应规则走 PSHistory;Linux 无 shell 历史采集,命令行证据
+  以进程快照为准。)

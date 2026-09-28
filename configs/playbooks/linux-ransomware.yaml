@@ -1,0 +1,114 @@
+# Linux 勒索排查·意图链模板(0.22.0-treecourt-port;由树庭
+# linux-ransomware-v1 手册蒸馏为意图树。依赖数据源:LinuxSC/Strata
+# 采集包(进程快照/cmdline 预筛/可写目录快照/deepscan/journal/systemd/
+# cron)——意图树是思路不依赖数据,数据源未接入时各意图如实宣告
+# 「数据未覆盖」;Linux 无 EFU/MFT 全量文件时间线,批量加密面天然
+# 证据薄,册内如实降级)
+id: linux-ransomware
+version: 1
+title: Linux 勒索排查(意图链模板)
+description: >-
+  Linux 勒索软件排查:破坏与删快照命令行(LVM/文件系统/备份面,Linux
+  无 vssadmin 对应物),加密进程候选(身份伪装、已删除仍运行、fd 大量
+  占用),批量改名/删除如实降级(Linux 无全量文件时间线,缺证据明说),
+  勒索信文件名特征反查,持久化留门,时间线串链。依赖 LinuxSC/Strata
+  数据源;数据缺失如实报「数据未覆盖」,不硬编。
+os: linux
+goal: >-
+  还原 Linux 勒索链:进机 → 断后路 → 加密执行 → 勒索信 → 留门;
+  加密面证据薄是采集边界不是排查失败,缺口如实标注待补采。
+intents:
+  - key: destructive_cmds
+    host_scope: each
+    text: 进程命令行里有没有破坏/删快照命令(反取证先断后路)?
+    ask: >-
+      勒索动手前先断后路——Linux 没有 vssadmin,快照面是 LVM 快照、
+      ZFS/BTRFS 快照、备份目录。翻进程命令行:lvremove/vgremove(拆
+      逻辑卷)、wipefs/mkfs(抹文件系统签名)、shred(安全擦除)、
+      cryptsetup、dd if=/dev/zero、rm -rf 根路径。还活着的相关进程
+      一并拎出来。正常运维也做卷管理和磁盘初始化,每条说出为什么不
+      像运维——时间、属主、前后动作。无 shell 历史,已退出的命令
+      查不到就如实说,别编。
+  - key: encrypt_process
+    host_scope: each
+    text: 哪个进程正在加密(伪装比对/自删二进制/fd 占用异常)?
+    ask: >-
+      找正在加密的那只手:①cmdline/comm/exe 伪装比对对不上、exe 被删
+      还在跑的;②已删除仍被持有文件——加密器常自删二进制继续跑,
+      memfd 打开的更典型;③进程 open_fds 计数异常高的(加密是批量
+      开文件读写)重点看,没有 fd 计数就如实说这一路没数据。cpu/mem
+      列只有瞬时值,压不压得住不据此下结论。系统服务别报,报了说清
+      哪一项不对。
+  - key: mass_rename_honest
+    after: [encrypt_process]
+    host_scope: each
+    text: 批量改名/删除面(如实降级:无全量文件时间线,旁证+残影两条路)?
+    ask: >-
+      丑话说前头:勒索最硬的手感「短时间大量文件改名/删除」,Linux
+      采集端没有 EFU/MFT 那种全量文件清单,journal/audit 默认也不
+      审计文件操作——这步证据天然薄,不许硬凑。能做的:①按前序
+      时间窗拉时间线,看窗内有没有密集可疑动作(登录、落地、执行)
+      能旁证;②已删除仍被持有文件里有没有成批同目录的(就地加密:
+      读原文件→删→写密文的残影)。两条都没有就如实说「采集未覆盖
+      文件操作面,建议补采文件清单/开 audit 文件规则」——这是结论,
+      不是失败。
+  - key: ransom_notes
+    after: [mass_rename_honest]
+    host_scope: each
+    text: 有没有勒索信文件名特征(HOW_TO_DECRYPT/README_FOR_DECRYPT 类)?
+    ask: >-
+      找勒索信:按特征文件名(HOW_TO_DECRYPT、README_FOR_DECRYPT、
+      recover_files、DECRYPT_INSTRUCTION 类)扫可写目录快照、deepscan
+      清单、已删除仍持有文件、journal 消息。命中给路径与锚点;没命中
+      的正确读法是「已扫范围内未见」——采集端没有全量文件清单,别
+      反推「无勒索信」,需全盘确认就写进补采建议。前序 IOC 反查一并看。
+  - key: persistence
+    after: [encrypt_process]
+    host_scope: each
+    text: 持久化留门(勒索后门的复活点:二次勒索/卖入口)?
+    ask: >-
+      勒索也常留后门:systemd 单元、cron、rc.local、profile.d、
+      pam_exec、authorized_keys 方向的持久化项,盯指向可写目录的、
+      随机名的、创建时间和前序可疑动作咬合的。三处指向同一目标的
+      优先说。系统自带单元别报,报出的说清凭什么常驻。
+  - key: rules_crosscheck
+    after: [persistence, destructive_cmds]
+    host_scope: each
+    text: 规则命中与前序发现互证后的总判断(进行中/已收尾/疑似前置/证据不足)?
+    ask: >-
+      把待审命中和前序发现摆一起互证:删快照命令行、勒索信文件名、
+      systemd 可写路径这些命中,和盯上的进程/文件对不对得上?两边都
+      对上的重点说;只有一边有的如实标注证据单薄。互证完给个总判断:
+      当前证据支持「加密进行中」「已加密收尾」「疑似前置准备」还是
+      「证据不足」,不许拔高。
+  - key: timeline
+    after: [rules_crosscheck, ransom_notes]
+    host_scope: each
+    text: 勒索活动时间线:「进机 → 断后路 → 加密执行 → 勒索信落地 → 留门」?
+    ask: >-
+      并账:按前序时间提示拉时间窗内事件,串一条「进机 → 断后路(删
+      快照/擦除)→ 加密执行 → 勒索信落地 → 留门」的链。加密面证据薄
+      (见批量改名步的降级说明),排得出的部分排,排不出的缺口如实
+      标注待补采,别硬连。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的)
+  - key: independent_review
+    after: [rules_crosscheck, ransom_notes]
+    host_scope: all
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: coverage_gate
+    after: [timeline, independent_review]
+    host_scope: all
+    text: 覆盖闸收官:哪些品类查过、哪些没查过,还有没有未核实的疑点?
+    ask: >-
+      收官宣告:对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默;
+      未核实疑点列成清单交给人。覆盖不全如实标,不硬编结论。

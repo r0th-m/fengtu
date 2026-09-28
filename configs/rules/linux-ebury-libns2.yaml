@@ -1,0 +1,13 @@
+# Linux:Ebury IOC 文件 libns2.so 落盘(文件系统侧扫描)
+# severity:树庭 critical,丰图词表最高 high(如实降档,语义不变)。
+id: linux-ebury-libns2
+title: Ebury IOC 文件 libns2 存在
+severity: high
+target: any
+match:
+  source_eq: [ebury_ioc_libs]
+  path_contains: [libns2]
+note: >-
+  Ebury IOC 库文件扫描中路径含 libns2(libns2.so 是 Ebury 后门的伪装
+  库名,仿系统 libnsl/libnss 命名)。libkeyutils 在合法系统上也存在故
+  不匹配,只报 Ebury 特有名。

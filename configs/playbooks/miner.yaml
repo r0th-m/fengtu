@@ -1,0 +1,97 @@
+# 挖矿排查·意图链模板(0.22.0-treecourt-port;由树庭 miner-v1 手册蒸馏
+# 为意图树——通用行为链:长期高 CPU → 矿池连接 → 落地痕迹 → 三处持久化
+# 复活 → 日志印证 → 时间线串链)
+id: miner
+version: 1
+title: 挖矿排查(意图链模板)
+description: >-
+  挖矿木马排查:SRUM CPU/读写聚合找长期高占用进程,矿池端口外联预筛
+  (3333/4444/5555/7777 等 stratum 常用端口),进程与执行痕迹找落地,
+  计划任务+Run 键+服务三处对同一目标找复活机制,事件日志印证,
+  时间线收尾。数据缺失如实报「数据未覆盖」,不硬编。
+os: windows
+goal: >-
+  挖矿判定走多视角互证:名单命中+协议+端口+位置+持久化,单条命中
+  只算弱信号;「同一目标多处持久化」是最高优先级发现。
+intents:
+  - key: cpu_hogs
+    host_scope: each
+    text: SRUM 里有没有长期高 CPU/高写盘的陌生进程(挖矿最先露馅的是电费)?
+    ask: >-
+      看 SRUM 应用资源聚合:CPU 周期 Top 和写盘 Top——盯陌生进程 CPU
+      占用压过浏览器/办公软件、长期挂着的后台进程、名字仿冒系统进程
+      的(svch0st/scvhost 类)。浏览器视频/游戏高占用正常,别把正常大户
+      当矿机;怀疑的要说出道理。
+  - key: pool_connections
+    host_scope: each
+    text: 有没有矿池连接(stratum 常用端口 3333/4444/5555/7777/8333/14444)?
+    ask: >-
+      挖矿一定要连矿池:公网直连矿池端口、陌生进程持有的长连接、连接
+      对端和高 CPU 进程对得上的。端口预筛命中不等于实锤(这些端口也有
+      合法用途),要给出综合判断。
+  - key: miner_processes
+    host_scope: each
+    text: 进程快照与执行痕迹里有没有矿机本体(可写目录/知名矿工名)?
+    ask: >-
+      找矿机本体:进程快照 + UserAssist/Shimcache + Prefetch 三处对着看。
+      盯:Temp/AppData/ProgramData/Public 等可写目录里的可执行文件、
+      知名矿工程序名(xmrig、minerd 类,报之前确认不是同名正常软件)、
+      与高 CPU/矿池连接对得上的进程。Prefetch 运行次数和最近运行时间
+      帮你区分「长期住户」和「路过的」。
+  - key: persistence_triangle
+    after: [miner_processes]
+    host_scope: each
+    text: 计划任务+Run 键+服务三处有没有对同一目标的复活机制?
+    ask: >-
+      挖矿最爱「打不死」:计划任务、Run 键、服务三处摆在一起看——同一
+      目标(同一路径/同一名称变体)出现在两处以上就是复活机制,删一处
+      它从另一处长回来。把「同一目标多处持久化」的组合拎出来,这是
+      最高优先级的发现。可结合 miner-service-writable-dir 与
+      suspicious-run-key-non-system-dir 规则命中核实。
+  - key: writable_landing
+    after: [persistence_triangle]
+    host_scope: each
+    text: 时间窗内可写目录有没有落地物(含落地后自删的投放器)?
+    ask: >-
+      拿前序时间窗和 IOC 过文件清单:EFU 与 MFT 行级按窗过滤——盯时间
+      窗内落到 Temp/AppData/ProgramData 的可执行文件、落地后又被删的
+      (矿机常自删原始投放器)、名字和前序可疑进程对得上的。过滤不到
+      的方向明确说没查到,别编。
+  - key: eventlog_persist
+    after: [persistence_triangle]
+    host_scope: each
+    text: 7045/4698 和持久化清单对不对得上(日志印证)?
+    ask: >-
+      日志印证一遍:7045 新服务、4698 计划任务创建,和持久化项对不对
+      得上——创建时间、服务名/任务名、映像路径。对得上的给印证链;
+      日志里多出来而清单里没有的(可能已被清理)单独说。
+  - key: timeline
+    after: [writable_landing, eventlog_persist, pool_connections, cpu_hogs]
+    host_scope: each
+    text: 挖矿活动时间线:「落地 → 执行 → 矿池外联 → 持久化」?
+    ask: >-
+      并账:按前序发现的时间提示拉时间窗内事件,串一条「落地 → 执行 →
+      矿池外联 → 持久化」的链,标出矿机大约什么时候上的机、活了多久。
+      排不出的缺口如实说,别硬连。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的)
+  - key: independent_review
+    after: [writable_landing, eventlog_persist]
+    host_scope: all
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: coverage_gate
+    after: [timeline, independent_review]
+    host_scope: all
+    text: 覆盖闸收官:哪些品类查过、哪些没查过,还有没有未核实的疑点?
+    ask: >-
+      收官宣告:对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默;
+      未核实疑点列成清单交给人。覆盖不全如实标,不硬编结论。

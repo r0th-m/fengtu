@@ -1,0 +1,23 @@
+# 同键异值分化·均值比模式(0.21.0 对齐索图 same_key_divergence,对照表
+# 高档;源 stats/method-bytes-divergence.yaml——同路径+同 IP+同 UA 的
+# 不同方法返回长度显著分化,0day 狩猎实案沉淀)。
+# 语义:复合键组内按 diverge_field 分桶,metric 均值 max/min ≥ diverge_ratio
+# 且组事件总数 ≥ min_group_events → 一条命中;min 桶均值为 0 而 max>0 记
+# 无限分化如实命中;缺键/缺分化字段的事件不计,metric 非数值不计入均值。
+# 旧 distinct 计数模式兼容:params 不写 diverge_field、写
+# key_field/dimension/min_distinct(如 src_ip+ua+50)即回旧语义。
+id: web-key-divergence
+title: 同键跨方法返回长度分化(均值比)
+family: web
+severity: low
+applicable_to:
+  log_types: [web_access]
+params:
+  key_fields: [path, src_ip, ua]
+  diverge_field: method
+  metric: bytes
+  min_group_events: 10
+  diverge_ratio: 3.0
+implemented: true
+note: 分化≠异常:GET/POST 返回体天然不同,命中只进待审区交人复核
+max_hits: 500

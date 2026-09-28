@@ -1,0 +1,20 @@
+# 横向移动:新服务映像在可写目录(7045 + 路径,强信号)
+# 0.22.0-treecourt-port 自树庭 lateral-service-writable-dir 迁移:
+# 树庭对 fields(含 ImagePath)做子串匹配 → 丰图对 evtx data(EventData
+# 嵌套对象,引擎串化后匹配)做同语义子串匹配;签名值零缩水。
+id: lateral-service-writable-dir
+title: 新服务映像在可写/用户目录(7045)
+severity: high
+target: any
+match:
+  channel_eq: [System]
+  event_id_eq: ["7045"]
+  data_contains:
+    - '\appdata\'
+    - '\temp\'
+    - '\programdata\'
+    - '\public\'
+note: >-
+  7045 新服务的映像路径落在 AppData/Temp/ProgramData/Public 等可写
+  目录——横向移动/木马服务落点的强信号,合法软件极少这样装服务,
+  high 级待审。

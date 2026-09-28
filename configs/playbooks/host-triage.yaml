@@ -1,0 +1,120 @@
+# 主机排查·意图链模板(0.22.0-treecourt-port;由树庭 host-triage-v1 手册
+# 蒸馏为意图树——流程是链条不是清单:后续意图消费前序发现的时间窗/IOC)
+#
+# 树形:外联/进程/执行痕迹/JumpList+Prefetch/事件日志/环境变量/计划任务
+# 并查(根)→ 账户(消费登录面)→ 时间线(消费前序发现)→ EFU+MFT 时间窗
+# 文件排查 → SRUM 印证 → 覆盖闸收官。
+id: host-triage
+version: 1
+title: 主机排查(意图链模板)
+description: >-
+  分析师实战主机排查流程:外联 → 进程 → 注册表执行痕迹 → JumpList/Prefetch →
+  事件日志 → 账户 → 环境变量 → 计划任务/驱动 → 时间线 → EFU+$MFT 时间窗
+  文件排查 → SRUM 印证。发现链:timeline/efu_window/srum 消费前序发现的
+  时间窗与 IOC。数据缺失如实报「数据未覆盖」,不硬编。
+os: windows
+goal: >-
+  回答「这台机器有没有事」:通道逐项排查,后续意图消费前序发现,
+  窗口缺失的品类如实宣告,结论只到「疑似候选」,判断权归人。
+intents:
+  - key: outbound
+    host_scope: each
+    text: 外联网络连接里有没有不对劲的地址/端口/进程组合?
+    ask: >-
+      先看门外的脚印:公网 IP 直连非常见端口、莫名进程持有外联、符合
+      远控/C2 端口特征的连接。每条给怀疑理由;NTP/DNS/系统更新这类
+      正常外联别凑数。
+  - key: processes
+    host_scope: each
+    text: 进程快照里有没有可疑进程(可写位置落地/仿冒系统名/随机名)?
+    ask: >-
+      看屋里的人:Temp/AppData/用户目录落地、仿冒系统进程名(svch0st、
+      scvhost 类形近)、无正当业务名的随机名、与规则命中对得上的。
+      系统常见进程别报,报了你得说得出哪里不对。
+  - key: registry_exec
+    host_scope: each
+    text: 注册表执行痕迹(UserAssist/Shimcache/MuiCache)里哪些程序跑过本身可疑?
+    ask: >-
+      翻注册表旧账:只在临时目录出现过的可执行文件、撞名系统工具但路径
+      不对、运行次数极少(打一枪就跑)、时间与其他可疑点咬合的。
+      办公/系统软件正常痕迹不用报。
+  - key: jumplist_prefetch
+    host_scope: each
+    text: JumpList/Prefetch 里哪些程序被执行过、最近打开过什么文件?
+    ask: >-
+      查 JumpList 和 Prefetch:哪些程序被执行过、最近打开过什么文件?
+      和可疑进程、可疑外联对一下,能不能互相印证。
+  - key: eventlog
+    host_scope: each
+    text: 事件日志有没有异常(登录/特权/进程创建/任务/服务/清日志)?
+    ask: >-
+      查事件日志:盯 4624/4625 登录、4672 特权分配、4688 进程创建、
+      4698 计划任务创建、7045 新服务、1102 日志清除。有异常登录或日志
+      被清的时间段,单独拎出来。
+  - key: accounts
+    after: [eventlog]
+    host_scope: each
+    text: 账户有没有不对劲(意料外本地账户/仿冒名/隐藏账户/默认账户启用)?
+    ask: >-
+      盘户口:意料之外的本地账户(尤其带管理员权限)、仿冒名、尾随 $ 的
+      隐藏账户、Guest/默认账户被启用、登录时间异常。内建账户如实说明即可。
+  - key: env_vars
+    host_scope: each
+    text: 环境变量有没有被动手脚(TEMP/PATH 劫持/来路不明的自定义变量)?
+    ask: >-
+      看环境变量:TEMP/TMP 指到非标准位置、PATH 里被插进可疑目录(可写/
+      临时目录,DLL 劫持/PATH 劫持面)、来路不明的自定义变量。正常的
+      开发环境配置(JAVA_HOME 之类)别当可疑报。
+  - key: schtasks
+    host_scope: each
+    text: 计划任务和驱动里哪些可疑(持久化老窝)?
+    ask: >-
+      查持久化的老窝:任务指向 Temp/AppData/用户目录的可执行文件、任务名
+      仿冒系统任务、以 SYSTEM 跑来路不明的程序、触发器和时间窗对得上的;
+      驱动盯无签名描述、随机名、非常驻路径的。
+  - key: timeline
+    after: [outbound, processes, eventlog]
+    host_scope: each
+    text: 按前序疑点梳理时间线:能不能排出「进来 → 落地 → 执行 → 外联/持久化」的链?
+    ask: >-
+      把前面的账并起来:按前序发现的时间提示拉相关时间窗事件,串时间线——
+      谁先谁后、哪些事件在时间上咬合。$MFT 摘要与 timestomp 候选($FN 晚于
+      $SI 创建,候选≠实锤)对得上的重点说。排不出的缺口如实说,别硬连。
+  - key: efu_window
+    after: [timeline]
+    host_scope: each
+    text: 时间窗内落地/改动/删除的文件里哪些可疑(EFU + $MFT 行级)?
+    ask: >-
+      拿前序时间窗和可疑 IOC 过文件清单:EFU 行级(现有文件快照)与 $MFT
+      行级(含已删除记录,EFU 看不到的增量)按 IOC 文件名片段+时间窗过滤,
+      删除记录单独列——重点看「窗内落地又被删」的;过滤不到的方向明确说
+      没查到,别编文件名。
+  - key: srum
+    after: [timeline]
+    host_scope: each
+    text: SRUM 能不能印证前序可疑进程(网络用量/执行记录对得上时间窗吗)?
+    ask: >-
+      用 SRUM 印证:前序可疑进程在时间窗内的网络用量、执行记录能不能对上?
+      有外联嫌疑的进程,SRUM 里有没有对应流量记录。对不上如实说。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的)
+  - key: independent_review
+    after: [accounts, env_vars, schtasks, efu_window, srum, jumplist_prefetch, registry_exec]
+    host_scope: all
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: coverage_gate
+    after: [accounts, env_vars, schtasks, efu_window, srum, jumplist_prefetch, registry_exec, independent_review]
+    host_scope: all
+    text: 覆盖闸收官:哪些品类查过、哪些没查过,还有没有未核实的疑点?
+    ask: >-
+      收官宣告:对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默;
+      未核实疑点列成清单交给人。覆盖不全如实标,不硬编结论。

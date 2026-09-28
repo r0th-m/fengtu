@@ -1,0 +1,23 @@
+# 启发式知识库内置条目:Linux SSH 后门/Ebury 研判(0.32.0-linuxsc)。
+id: linux-sshd-backdoor-review
+title: Linux SSH 后门:钥匙、配置、库三面互证
+applies_to: [linux, lateral-movement, account, host-triage]
+content: >-
+  【思路】SSH 后门三条命:种公钥(authorized_keys)、改配置
+  (sshd_config PermitRootLogin/AuthorizedKeysFile 指向)、换库
+  (Ebury 篡改 libkeyutils/libns2 钩 sshd)。单面命中不定论,
+  三面互证才成链:多出来的钥匙 × 登录日志里对得上的来源 ×
+  库文件的包校验失败。
+  【怎么找】钥匙面:authorized_keys 逐把看结构风险标(弱钥/
+  强制命令/占位符注释),问「谁、从哪台管理机、该不该在」。
+  配置面:sshd_config 与 sshd -T 有效配置对照(Match 块里的
+  覆盖最易藏)。库面:ldd sshd 的依赖清单,libns2/libpw5 这类
+  Ebury 特有伪装名合法系统不该有;libkeyutils 在 RHEL 系经 krb5
+  合法链接,只有落在非标准库目录才可疑——原位替换的篡改版
+  判不出,要靠 rpm -V/dpkg -V 包校验(采集端只覆盖关键包,
+  覆盖缺口如实)。
+  【交叉印证】登录日志空洞(Ebury 活动期停 sshd/auditd 日志)
+  本身是证据:authlog/journal 时间线出现不合理解释的断档,
+  对齐 SSH 面发现一起看。
+  【注意】运维批量分发公钥、堡垒机强制命令都是常态;弱钥
+  在老系统上存量多,按「能否归因」排优先级。

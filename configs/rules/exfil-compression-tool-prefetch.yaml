@@ -1,0 +1,23 @@
+# 数据外泄:压缩工具执行痕迹(Prefetch;打包待传的前奏,low 级)
+# 0.22.0-treecourt-port 自树庭 exfil-compression-tool-prefetch 迁移:
+# 锚 prefetch_exec.exe_name(丰图 prefetch 解析器同名字段,语义一致);
+# 签名值零缩水;_eq = 精确等值(对齐树庭裸键 eq 语义)。
+id: exfil-compression-tool-prefetch
+title: 压缩工具执行痕迹(Prefetch)
+severity: low
+target: any
+match:
+  exe_name_eq:
+    - 7Z.EXE
+    - 7ZG.EXE
+    - 7ZFM.EXE
+    - RAR.EXE
+    - WINRAR.EXE
+    - BANDIZIP.EXE
+    - HAOZIP.EXE
+    - 360ZIP.EXE
+    - KUAIZIP.EXE
+note: >-
+  Prefetch 显示压缩/打包工具被执行(7z/WinRAR/Bandizip/好压/360压缩/快压)
+  ——外泄前打包的通用前奏,但日常办公也高频使用,故 low 级,
+  价值在于与上传/时间窗互证,不单独定案。

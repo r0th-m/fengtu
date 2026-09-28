@@ -1,0 +1,24 @@
+# 启发式知识库内置条目:Linux 认证面研判(0.22.0-treecourt-port)。
+id: linux-authlog-bruteforce-review
+title: Linux 认证面:每条 accepted 都要回溯同 IP 失败史
+applies_to: [linux, lateral-movement, account, host-triage]
+content: >-
+  【思路】互联网面的 Linux 主机常年被暴破,auth_log/journal 里的
+  每一条登录成功(accepted)都该能说清三件事:是谁、从哪来、
+  该不该在。判读钥匙在失败史对照:同一源 IP「先大量失败后成功」
+  =暴破得手,这是认证面最重要的模式;单纯失败量大只是被扫,
+  不算得手。root 远程登录成功是最重的一条——root 直登先核
+  堡垒机/运维白名单。
+  【怎么找】两本账都看:auth_log 与 journal sshd(发行版覆盖
+  时段常有差)。按 action 聚合计数(失败/非法用户/成功)、
+  失败源 IP Top、成功登录全量;still logged in 会话与 last
+  来源 Top 里没见过的新来源单独拎。横向面:本机主动向内网
+  22 端口的已建立连接=跳板候选(服务器不该主动发起);隧道
+  工具(frp/autossh/chisel/ssh -D)在无运维理由的主机上即
+  反连通道。
+  【交叉印证】成功登录 × 账户盘点(authorized_keys 陌生公钥、
+  UID 0 克隆)× 落点持久化(登录后立刻出现的单元/cron),串成
+  「进来 → 留钥匙 → 落脚」链。
+  【注意】运维互访、ansible 批量管理、集群心跳是常态,别把
+  运维当攻击;来源是内网其他主机时,问题变成「那台机器怎么
+  了」,横向链要追第一跳。

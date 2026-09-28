@@ -1,0 +1,14 @@
+# Linux 外泄:可写目录里的压缩包(shm/tmp 快照,打包现场)
+# _endswith:0.32.0 补齐的尾匹配算子(树庭附录 A 同名;扩展名判定
+# 用尾匹配才准,contains 会把 x.zip.log 误命中)。
+id: linux-exfil-shmtmp-archive
+title: 可写目录压缩包(shm/tmp 快照)
+severity: medium
+target: any
+match:
+  source_eq: [shm_tmp_listing]
+  name_endswith: [".tar.gz", ".tgz", ".zip", ".7z", ".rar", ".tar.bz2"]
+note: >-
+  /dev/shm、/tmp、/var/tmp 目录快照中出现压缩包——外泄「打包现场」
+  候选,放可写目录是图省事与躲权限的通用动作。构建/部署也产压缩包,
+  由人看属主、大小与前后动作。

@@ -1,0 +1,15 @@
+# 勒索前置:删影/启动配置工具被执行(Prefetch 留痕)
+# 0.22.0-treecourt-port 自树庭 ransom-shadow-tool-prefetch 迁移:
+# 锚 prefetch_exec.exe_name(丰图同名字段);签名值零缩水。
+id: ransom-shadow-tool-prefetch
+title: 删影/启动配置工具执行痕迹(Prefetch)
+severity: medium
+target: any
+match:
+  exe_name_eq:
+    - VSSADMIN.EXE
+    - WBADMIN.EXE
+    - BCDEDIT.EXE
+note: >-
+  Prefetch 显示 vssadmin/wbadmin/bcdedit 被执行过——这些工具本身合法,
+  但在非备份维护场景出现即是删影留痕嫌疑,medium 级待审。

@@ -1,0 +1,22 @@
+# 数据外泄:上传/传输工具命令行(rclone/curl -T/pscp/winscp/ftp 批处理)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;签名值逐字保留
+# (curl -t 小写:匹配大小写不敏感,-T 同覆盖,与树庭口径一致)。
+id: exfil-upload-tool-cmdline
+title: 上传/传输工具命令行(PSHistory)
+severity: medium
+target: any
+match:
+  command_contains:
+    - rclone copy
+    - rclone move
+    - rclone sync
+    - curl -t
+    - curl --upload-file
+    - pscp
+    - winscp.com
+    - "ftp -s:"
+note: >-
+  PowerShell 历史里出现上传/文件传输命令:rclone copy/move/sync、
+  curl -T/--upload-file、pscp、winscp 脚本、ftp -s: 批处理——外泄
+  「传输」段的通用动作,medium 级待审;运维备份脚本也会用,由人
+  结合目标地址判定。

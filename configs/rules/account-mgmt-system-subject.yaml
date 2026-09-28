@@ -1,0 +1,31 @@
+# 免登录通道候选:账户管理事件主体为 SYSTEM/机器账户
+# 0.32.1-case-distilled(勒索案排查路径蒸馏 §五-2:4720/4724/4732 主体
+# S-1-5-18 且窗口内无对应 4624 → 触发免登录通道排查清单)。
+#
+# 字段依据(以 evtx 解析产物实际字段名为准,internal/ingest/evtx.go):
+#   - channel/event_id:norm 顶层字段(Event.System.Channel/EventID);
+#   - data:EventData 平铺后的 map 串化 JSON(形如
+#     {"SubjectUserSid":"S-1-5-18","SubjectUserName":"SYSTEM",...},
+#     冒号后无空格,键序不定;CH 预筛 positionCaseInsensitive 与 Go 复判
+#     fieldValue 同口径)。账户管理事件的主体在 Subject* 键。
+#   - 「机器账户$」表达:规则语言只有子串匹配,"$""(值尾 $)会把
+#     TargetUserName 以 $ 结尾的事件也筛进来(如新建机器账户)——
+#     引擎表达力上限如实标注,候选由人裁,驳回即可。
+id: account-mgmt-system-subject
+title: 账户管理事件主体为 SYSTEM/机器账户(免登录通道候选)
+severity: medium
+target: any
+match:
+  channel_eq: [Security]
+  event_id_eq: ["4720", "4724", "4725", "4726", "4732", "4738"]
+  data_contains:
+    - '"subjectusersid":"s-1-5-18"'
+    - '$"'
+note: >-
+  Security 通道账户管理事件(4720 建账户/4724 重置密码/4725 禁账户/
+  4726 删账户/4732 加组/4738 改账户)主体为 SYSTEM(S-1-5-18)或机器
+  账户(名以 $ 结尾)——候选≠定性:企业管控软件/GPO 下发也能产生
+  同形态,裁决归人;若窗口内无对应 4624 登录成功,升级排查免登录
+  通道(IFEO/恶意服务/计划任务/数据库命令执行)。机器账户形态经
+  值尾 $ 子串表达,目标账户名以 $ 结尾的事件会一并筛入(见文件头
+  如实标注),人裁驳回即可。

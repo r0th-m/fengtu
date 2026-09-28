@@ -1,0 +1,107 @@
+# Linux 挖矿排查·意图链模板(0.22.0-treecourt-port;由树庭 linux-miner-v1
+# 手册蒸馏为意图树。依赖数据源:LinuxSC/Strata 采集包(ps/proc 身份比对/
+# ss/conntrack/可写目录快照/systemd/cron)——意图树是思路不依赖数据,
+# 数据源未接入时各意图如实宣告「数据未覆盖」)
+id: linux-miner
+version: 1
+title: Linux 挖矿排查(意图链模板)
+description: >-
+  Linux 挖矿木马排查:进程快照与身份比对找常驻可疑进程(Linux 无 SRUM,
+  ps 只有瞬时 CPU 百分比,长期占用靠「常驻+非常见+对得上外联」推断,
+  如实降级),矿池 stratum 常用端口外联预筛,命令行找 stratum 地址与
+  矿工名,可写目录落地与 memfd 内存马链,systemd/cron/profile.d 三处
+  对同一目标找复活机制,时间线收尾。依赖 LinuxSC/Strata 数据源;
+  数据缺失如实报「数据未覆盖」,不硬编。
+os: linux
+goal: >-
+  挖矿判定走多视角互证:常驻可疑进程+矿池连接+命令行特征+落地位置+
+  持久化复活;瞬时快照的局限如实声明,单条命中只算弱信号。
+intents:
+  - key: resident_procs
+    host_scope: each
+    text: 常驻进程里有没有可疑者(身份比对/可写路径/父进程断裂)?
+    ask: >-
+      Linux 没有 SRUM 算长期占用,ps 快照的 %CPU 只是按下快门那一瞬——
+      矿工是长期住户,瞬时抓不到满负荷不代表干净,这个局限先说死。看人
+      路数:①cmdline/comm/exe 三方比对——对不上(伪装)、exe 被删还在跑
+      (矿工自保经典动作);②非常见进程名、随机名、路径在 /tmp、/dev/shm、
+      /var/tmp、用户家目录的;③父进程树断裂或父进程说不清的。系统服务
+      与内核线程([kthreadd] 类方括号)别报,报了要说出哪一项不对。
+  - key: pool_connections
+    host_scope: each
+    text: 有没有矿池连接(stratum 常用端口 + conntrack 短命连接)?
+    ask: >-
+      挖矿一定要连矿池:ss 快照里 3333/4444/5555/7777/8333/14444 端口
+      命中的连接单独看,再对 conntrack——ss 里已消失但 conntrack 还记着
+      的短连接(打一包就走)、对矿池端口的 SYN_SENT/UNREPLIED(回连不通
+      的死矿池)。盯连接对端进程和可疑进程对不对得上。预筛命中不等于
+      实锤(5555 是安卓 adb 等合法用途),综合判断。
+  - key: mining_cmdline
+    host_scope: each
+    text: 进程命令行里有没有挖矿特征(stratum 地址/矿工名/矿工参数)?
+    ask: >-
+      翻进程命令行:stratum+tcp:// 或 stratum+ssl:// 出现在命令行里基本
+      没得洗;矿工名(xmrig/minerd/cpuminer 类)要排除同名正常软件,看
+      路径与参数再说;--donate-level 这类矿工程序参数、pool. 域名段
+      一并看。丑话:无 shell 历史采集,命令行证据只有进程快照——历史上
+      跑过又退出的矿工看不到,看不到就如实说,别编。
+  - key: landing_memfd
+    host_scope: each
+    text: 可写目录落地与内存马链(/dev/shm//tmp + deleted/memfd)?
+    ask: >-
+      找矿机的窝:/dev/shm、/tmp、/var/tmp 目录快照——可执行权限的陌生
+      文件、随机名、隐藏文件(.开头)都拎出来;已删除仍被进程持有的
+      文件(memfd 打开、/tmp 里删了还在跑)是内存马/无文件矿工的典型链;
+      已回收样本(哈希在)可送查。合法用法存在(临时构建、部署脚本),
+      报之前想清楚它凭什么待在那。
+  - key: persistence_triangle
+    after: [landing_memfd]
+    host_scope: each
+    text: systemd/cron/profile.d 三处有没有对同一目标的复活机制?
+    ask: >-
+      矿工最爱「打不死」:systemd 单元、cron、profile.d/bashrc、init
+      脚本、udev RUN 规则摆在一起看——同一目标(同一路径/同一名称变体/
+      同一下载地址)出现在两处以上就是复活机制。重点:ExecStart 或 cron
+      命令指向可写目录落地的;curl/wget 拉脚本再执行的;LD_PRELOAD
+      export 藏 preload 劫持的。系统自带单元别报;「同一目标多处持久化」
+      的组合是最高优先级发现。
+  - key: rules_crosscheck
+    after: [persistence_triangle, mining_cmdline, pool_connections]
+    host_scope: each
+    text: 规则命中与前序发现能不能互证(矿池端口/矿工进程/可疑持久化)?
+    ask: >-
+      把待审命中和前序发现摆一起互证:矿池端口外联、stratum 命令行、
+      systemd 可写路径、cron 可疑条目这些命中,和在进程/连接/持久化里
+      盯上的对象对不对得上?两边都对上的重点说;只有一边有的如实标注
+      证据单薄;规则没命中的方向也别假装有。
+  - key: timeline
+    after: [rules_crosscheck, resident_procs]
+    host_scope: each
+    text: 挖矿活动时间线:「进机 → 落地可写目录 → 起矿进程 → 矿池外联 → 持久化复活」?
+    ask: >-
+      并账:按前序发现的时间提示拉时间窗内事件,串一条「进机(暴破/
+      漏洞)→ 落地可写目录 → 起矿进程 → 矿池外联 → 持久化复活」的链,
+      标出矿机大约什么时候上的机。排不出的缺口如实说,别硬连;孤立
+      可疑点单独拎出来。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的)
+  - key: independent_review
+    after: [rules_crosscheck]
+    host_scope: all
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: coverage_gate
+    after: [timeline, independent_review]
+    host_scope: all
+    text: 覆盖闸收官:哪些品类查过、哪些没查过,还有没有未核实的疑点?
+    ask: >-
+      收官宣告:对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默;
+      未核实疑点列成清单交给人。覆盖不全如实标,不硬编结论。

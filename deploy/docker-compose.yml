@@ -1,0 +1,61 @@
+# 丰图 v2 台架(M0 切片二):ClickHouse(事件)+ PostgreSQL(元数据)。
+#
+# 部署对象:内网台架 VM(单机起步,DESIGN §3「单机即可起步,组件可拆」)。
+# 绑定纪律:端口只绑 ${FENGTU_BIND_IP}(台架 VM 内网地址,缺省 127.0.0.1),
+# 不裸绑 0.0.0.0;口令走环境变量(CLICKHOUSE_PASSWORD/POSTGRES_PASSWORD),
+# 勿写进文件,生产部署务必用强口令。
+#
+# 用法(VM 上):
+#   cd deploy && FENGTU_BIND_IP=<台架内网IP> docker compose up -d
+#
+# schema 初始化:两个引擎的 entrypoint initdb 机制只在数据卷为空时执行一次
+# (schema/ch/*.sql → clickhouse;schema/pg/*.sql → postgres)。
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8
+    container_name: fengtu-clickhouse
+    restart: unless-stopped
+    ports:
+      - "${FENGTU_BIND_IP:-127.0.0.1}:9000:9000"   # native 协议(Go 客户端/clickhouse-client)
+      - "${FENGTU_BIND_IP:-127.0.0.1}:8123:8123"   # HTTP(排障/健康检查)
+    environment:
+      CLICKHOUSE_DB: fengtu
+      CLICKHOUSE_USER: fengtu
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?CLICKHOUSE_PASSWORD 未配(口令走环境变量,勿写进文件)}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    volumes:
+      - ch_data:/var/lib/clickhouse
+      - ./schema/ch:/docker-entrypoint-initdb.d:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  postgres:
+    image: postgres:16
+    container_name: fengtu-postgres
+    restart: unless-stopped
+    ports:
+      - "${FENGTU_BIND_IP:-127.0.0.1}:5432:5432"
+    environment:
+      POSTGRES_DB: fengtu
+      POSTGRES_USER: fengtu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 未配(口令走环境变量,勿写进文件)}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./schema/pg:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fengtu -d fengtu"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  ch_data:
+  pg_data:

@@ -1,0 +1,13 @@
+# Linux:UID 0 账户核查(root 本身会命中属预期——引擎只有正向匹配,
+# 无法表达「非 root」,与树庭同款如实说明)
+id: linux-uid0-account
+title: UID 0 账户核查(root 之外的 UID 0 是后门)
+severity: medium
+target: any
+match:
+  source_eq: [passwd]
+  uid_eq: ["0"]
+note: >-
+  /etc/passwd 中 UID 为 0 的账户。root 本身命中属预期;复核清单里出现
+  root 以外的任何 UID 0 账户——UID 0 克隆账户是 Linux 最古老的留后门
+  手法,出现即 high 级人工定论。

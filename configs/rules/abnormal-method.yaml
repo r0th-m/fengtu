@@ -1,0 +1,18 @@
+# 索图规则资产迁移(2026-09-25 对照表 §2.2,语义不变,签名内容未缩水;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜;scanner-ua 已同法迁移)
+# 异常 HTTP 方法:TRACE/TRACK(跨站追踪)与 PUT/DELETE(写方法,静态站不该出现)
+id: abnormal-method
+title: 异常 HTTP 方法
+severity: info
+target: any
+match:
+  method:
+    - "TRACE"
+    - "TRACK"
+    - "PUT"
+    - "DELETE"
+note: >-
+  TRACE/TRACK 关联 XST(跨站追踪,公开 CVE-2004-2320 类问题);PUT/DELETE
+  对多数只读站点是写方法探测。REST API 站点 PUT/DELETE 是正常流量,
+  故只给 info 级,纯提示,判断权归人。

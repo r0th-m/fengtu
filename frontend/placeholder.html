@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>丰图 · 前端未构建</title>
+  </head>
+  <body style="font-family: sans-serif; background: #fafaf8; color: #2b2f33; display: flex; min-height: 100vh; align-items: center; justify-content: center;">
+    <div style="max-width: 32rem; text-align: center;">
+      <h1 style="color: #0e7c7b;">丰图</h1>
+      <p>按图索骥 · 应急取证分析</p>
+      <p style="color: #6b7280; font-size: 0.875rem;">
+        当前二进制内嵌的是占位页：前端尚未构建（如实提示，非故障）。<br />
+        构建管线：<code>cd frontend && npm install && npm run build</code>，然后重新 <code>go build ./cmd/fengtu</code>。
+      </p>
+      <p style="color: #6b7280; font-size: 0.875rem;">API 正常：<a href="/api/health">/api/health</a></p>
+    </div>
+  </body>
+</html>

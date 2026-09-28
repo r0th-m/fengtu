@@ -1,0 +1,259 @@
+# github.com/Autumn-27/norma v0.4.1
+## explicit; go 1.26.3
+github.com/Autumn-27/norma/agentcore
+github.com/Autumn-27/norma/compaction
+github.com/Autumn-27/norma/harness
+github.com/Autumn-27/norma/hook
+github.com/Autumn-27/norma/llm
+github.com/Autumn-27/norma/memory
+github.com/Autumn-27/norma/permission
+github.com/Autumn-27/norma/plan
+github.com/Autumn-27/norma/skill
+github.com/Autumn-27/norma/tool
+github.com/Autumn-27/norma/transcript
+# github.com/ClickHouse/ch-go v0.74.0
+## explicit; go 1.25.0
+github.com/ClickHouse/ch-go/compress
+github.com/ClickHouse/ch-go/proto
+# github.com/ClickHouse/clickhouse-go/v2 v2.48.0
+## explicit; go 1.25.0
+github.com/ClickHouse/clickhouse-go/v2
+github.com/ClickHouse/clickhouse-go/v2/ext
+github.com/ClickHouse/clickhouse-go/v2/internal/circular
+github.com/ClickHouse/clickhouse-go/v2/lib/binary
+github.com/ClickHouse/clickhouse-go/v2/lib/chcol
+github.com/ClickHouse/clickhouse-go/v2/lib/churl
+github.com/ClickHouse/clickhouse-go/v2/lib/column
+github.com/ClickHouse/clickhouse-go/v2/lib/driver
+github.com/ClickHouse/clickhouse-go/v2/lib/proto
+github.com/ClickHouse/clickhouse-go/v2/lib/timezone
+github.com/ClickHouse/clickhouse-go/v2/resources
+# github.com/Velocidex/ordereddict v0.0.0-20220107075049-3dbe58412844
+## explicit; go 1.13
+github.com/Velocidex/ordereddict
+# github.com/Velocidex/pkcs7 v0.0.0-20210524015001-8d1eee94a157
+## explicit; go 1.16
+github.com/Velocidex/pkcs7
+# github.com/Velocidex/yaml/v2 v2.2.8
+## explicit; go 1.15
+github.com/Velocidex/yaml/v2
+# github.com/andybalholm/brotli v1.2.2
+## explicit; go 1.22
+github.com/andybalholm/brotli
+github.com/andybalholm/brotli/flate
+github.com/andybalholm/brotli/matchfinder
+# github.com/cespare/xxhash/v2 v2.3.0
+## explicit; go 1.11
+github.com/cespare/xxhash/v2
+# github.com/creack/pty v1.1.24
+## explicit; go 1.18
+github.com/creack/pty
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
+# github.com/dustin/go-humanize v1.0.1
+## explicit; go 1.16
+github.com/dustin/go-humanize
+# github.com/go-faster/city v1.0.1
+## explicit; go 1.17
+github.com/go-faster/city
+# github.com/go-faster/errors v0.7.1
+## explicit; go 1.20
+github.com/go-faster/errors
+# github.com/google/uuid v1.6.0
+## explicit
+github.com/google/uuid
+# github.com/hashicorp/golang-lru v0.5.4
+## explicit; go 1.12
+github.com/hashicorp/golang-lru
+github.com/hashicorp/golang-lru/simplelru
+# github.com/hinshun/vt10x v0.0.0-20220301184237-5011da428d02
+## explicit; go 1.14
+github.com/hinshun/vt10x
+# github.com/jackc/pgpassfile v1.0.0
+## explicit; go 1.12
+github.com/jackc/pgpassfile
+# github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761
+## explicit; go 1.14
+github.com/jackc/pgservicefile
+# github.com/jackc/pgx/v5 v5.11.0
+## explicit; go 1.25.0
+github.com/jackc/pgx/v5
+github.com/jackc/pgx/v5/internal/iobufpool
+github.com/jackc/pgx/v5/internal/pgdatetime
+github.com/jackc/pgx/v5/internal/pgio
+github.com/jackc/pgx/v5/internal/sanitize
+github.com/jackc/pgx/v5/internal/stmtcache
+github.com/jackc/pgx/v5/pgconn
+github.com/jackc/pgx/v5/pgconn/ctxwatch
+github.com/jackc/pgx/v5/pgconn/internal/bgreader
+github.com/jackc/pgx/v5/pgproto3
+github.com/jackc/pgx/v5/pgtype
+github.com/jackc/pgx/v5/pgxpool
+# github.com/jackc/puddle/v2 v2.2.2
+## explicit; go 1.19
+github.com/jackc/puddle/v2
+github.com/jackc/puddle/v2/internal/genstack
+# github.com/klauspost/compress v1.19.1
+## explicit; go 1.24
+github.com/klauspost/compress
+github.com/klauspost/compress/fse
+github.com/klauspost/compress/huff0
+github.com/klauspost/compress/internal/cpuinfo
+github.com/klauspost/compress/internal/le
+github.com/klauspost/compress/internal/snapref
+github.com/klauspost/compress/zstd
+github.com/klauspost/compress/zstd/internal/xxhash
+# github.com/mattn/go-isatty v0.0.20
+## explicit; go 1.15
+github.com/mattn/go-isatty
+# github.com/ncruces/go-strftime v0.1.9
+## explicit; go 1.17
+github.com/ncruces/go-strftime
+# github.com/paulmach/orb v0.13.0
+## explicit; go 1.18
+github.com/paulmach/orb
+# github.com/pierrec/lz4/v4 v4.1.27
+## explicit; go 1.17
+github.com/pierrec/lz4/v4
+github.com/pierrec/lz4/v4/internal/lz4block
+github.com/pierrec/lz4/v4/internal/lz4errors
+github.com/pierrec/lz4/v4/internal/lz4stream
+github.com/pierrec/lz4/v4/internal/xxh32
+# github.com/pkg/errors v0.8.1
+## explicit
+github.com/pkg/errors
+# github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec
+## explicit; go 1.12
+github.com/remyoudompheng/bigfft
+# github.com/richardlehane/mscfb v1.0.8
+## explicit; go 1.18
+github.com/richardlehane/mscfb
+# github.com/richardlehane/msoleps v1.0.3
+## explicit
+github.com/richardlehane/msoleps/types
+# github.com/rogpeppe/go-internal v1.16.0
+## explicit; go 1.25
+# github.com/segmentio/asm v1.2.1
+## explicit; go 1.18
+github.com/segmentio/asm/bswap
+github.com/segmentio/asm/cpu
+github.com/segmentio/asm/cpu/arm
+github.com/segmentio/asm/cpu/arm64
+github.com/segmentio/asm/cpu/cpuid
+github.com/segmentio/asm/cpu/x86
+# github.com/shopspring/decimal v1.4.0
+## explicit; go 1.10
+github.com/shopspring/decimal
+# go.opentelemetry.io/otel v1.44.0
+## explicit; go 1.25.0
+go.opentelemetry.io/otel/attribute
+go.opentelemetry.io/otel/attribute/internal
+go.opentelemetry.io/otel/attribute/internal/xxhash
+go.opentelemetry.io/otel/codes
+go.opentelemetry.io/otel/semconv/v1.41.0
+# go.opentelemetry.io/otel/trace v1.44.0
+## explicit; go 1.25.0
+go.opentelemetry.io/otel/trace
+go.opentelemetry.io/otel/trace/embedded
+go.opentelemetry.io/otel/trace/internal/telemetry
+# golang.org/x/crypto v0.57.0
+## explicit; go 1.26.0
+golang.org/x/crypto/bcrypt
+golang.org/x/crypto/blowfish
+# golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
+## explicit; go 1.23.0
+golang.org/x/exp/constraints
+# golang.org/x/net v0.58.0
+## explicit; go 1.25.0
+golang.org/x/net/html
+golang.org/x/net/html/atom
+# golang.org/x/sync v0.23.0
+## explicit; go 1.26.0
+golang.org/x/sync/semaphore
+# golang.org/x/sys v0.48.0
+## explicit; go 1.26.0
+golang.org/x/sys/cpu
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+golang.org/x/sys/windows/registry
+# golang.org/x/text v0.42.0
+## explicit; go 1.26.0
+golang.org/x/text/cases
+golang.org/x/text/encoding
+golang.org/x/text/encoding/internal
+golang.org/x/text/encoding/internal/identifier
+golang.org/x/text/encoding/simplifiedchinese
+golang.org/x/text/encoding/unicode
+golang.org/x/text/internal
+golang.org/x/text/internal/language
+golang.org/x/text/internal/language/compact
+golang.org/x/text/internal/tag
+golang.org/x/text/internal/utf8internal
+golang.org/x/text/language
+golang.org/x/text/runes
+golang.org/x/text/secure/bidirule
+golang.org/x/text/secure/precis
+golang.org/x/text/transform
+golang.org/x/text/unicode/bidi
+golang.org/x/text/unicode/norm
+golang.org/x/text/width
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3
+# modernc.org/libc v1.66.10
+## explicit; go 1.23.0
+modernc.org/libc
+modernc.org/libc/errno
+modernc.org/libc/fcntl
+modernc.org/libc/fts
+modernc.org/libc/grp
+modernc.org/libc/honnef.co/go/netdb
+modernc.org/libc/langinfo
+modernc.org/libc/limits
+modernc.org/libc/netdb
+modernc.org/libc/netinet/in
+modernc.org/libc/poll
+modernc.org/libc/pthread
+modernc.org/libc/pwd
+modernc.org/libc/signal
+modernc.org/libc/stdio
+modernc.org/libc/stdlib
+modernc.org/libc/sys/socket
+modernc.org/libc/sys/stat
+modernc.org/libc/sys/types
+modernc.org/libc/termios
+modernc.org/libc/time
+modernc.org/libc/unistd
+modernc.org/libc/utime
+modernc.org/libc/uuid
+modernc.org/libc/uuid/uuid
+modernc.org/libc/wctype
+# modernc.org/mathutil v1.7.1
+## explicit; go 1.21
+modernc.org/mathutil
+# modernc.org/memory v1.11.0
+## explicit; go 1.23.0
+modernc.org/memory
+# modernc.org/sqlite v1.39.1
+## explicit; go 1.24.0
+modernc.org/sqlite
+modernc.org/sqlite/lib
+# www.velocidex.com/golang/binparsergen v0.1.1-0.20201101234514-bbdb29f9ee31
+## explicit; go 1.13
+www.velocidex.com/golang/binparsergen/reader
+# www.velocidex.com/golang/evtx v0.2.0
+## explicit; go 1.13
+www.velocidex.com/golang/evtx
+# www.velocidex.com/golang/go-ese v0.2.0
+## explicit; go 1.13
+www.velocidex.com/golang/go-ese/parser
+# www.velocidex.com/golang/go-pe v0.1.1-0.20211006062218-8f6d1ad6b2d5
+## explicit; go 1.13
+www.velocidex.com/golang/go-pe
+# www.velocidex.com/golang/go-prefetch v0.0.0-20260922101442-4bae97962980
+## explicit; go 1.25
+www.velocidex.com/golang/go-prefetch
+# www.velocidex.com/golang/regparser v0.0.0-20250203141505-31e704a67ef7
+## explicit; go 1.18
+www.velocidex.com/golang/regparser

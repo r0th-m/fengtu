@@ -1,0 +1,15 @@
+# 索图规则资产迁移(2026-09-25 对照表 §2.2,语义不变,签名内容未缩水;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜;scanner-ua 已同法迁移)
+# XSS:javascript: 伪协议(常见于重定向/跳转参数投毒)
+id: xss-javascript-protocol
+title: "XSS javascript: 伪协议特征"
+severity: medium
+target: any
+match:
+  query:
+    - "javascript:"
+    - "javascript%3a"
+note: >-
+  javascript: 伪协议作为跳转参数值(url=/redirect=/next=)是公开 XSS
+  手法(OWASP 测试指南);正常业务几乎不会把该协议字面量放进查询串。

@@ -1,0 +1,28 @@
+# 扫描器/攻击工具 User-Agent 指纹(索图规则资产迁移,语义不变;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜)
+id: scanner-ua
+title: 扫描器 User-Agent 特征
+severity: medium
+target: any
+match:
+  ua:
+    - "sqlmap"
+    - "nikto"
+    - "acunetix"
+    - "netsparker"
+    - "w3af"
+    - "nmap"
+    - "masscan"
+    - "dirbuster"
+    - "gobuster"
+    - "hydra"
+    - "nuclei"
+    - "wpscan"
+    - "nessus"
+    - "openvas"
+note: >-
+  主流扫描/攻击工具的默认 UA 自我标识(sqlmap、Nikto、Acunetix、
+  Netsparker、w3af、Nmap、masscan、dirbuster、gobuster、hydra 等),
+  属公开工具指纹。UA 可伪造,命中只说明「自称」,严重级给 medium。
+  命中≠结论:机器候选,判断权归人。

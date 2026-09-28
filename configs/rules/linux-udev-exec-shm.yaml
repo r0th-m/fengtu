@@ -1,0 +1,12 @@
+# Linux:udev 规则执行 /dev/shm 内容(设备事件触发的隐蔽持久化)
+id: linux-udev-exec-shm
+title: udev 规则执行 /dev/shm 内容
+severity: high
+target: any
+match:
+  has_exec_eq: ["true"]
+  raw_contains: ["/dev/shm"]
+note: >-
+  udev 规则的 RUN/PROGRAM 指向 /dev/shm(内存文件系统,重启即失、
+  取证难留痕)——插设备/内核事件即触发的隐蔽持久化手法。合法 udev
+  规则几乎不会引用 /dev/shm。

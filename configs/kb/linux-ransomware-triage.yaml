@@ -1,0 +1,26 @@
+# 启发式知识库内置条目:Linux 勒索/破坏面研判(0.22.0-treecourt-port)。
+id: linux-ransomware-triage
+title: Linux 勒索:断后路看 LVM/擦除面,批量加密面证据薄要如实降级
+applies_to: [linux, ransomware, anti-forensics]
+content: >-
+  【思路】Linux 勒索与 Windows 同思路:动手前先断恢复后路。
+  但快照面对应物不同——Linux 没有 vssadmin,恢复面是 LVM 快照、
+  ZFS/BTRFS 快照、备份目录,破坏命令是 lvremove/vgremove/
+  wipefs/mkfs/shred/dd if=/dev/zero。另一个结构性差异要诚实:
+  Linux 采集端没有 EFU/MFT 那种全量文件时间线,journal/audit
+  默认也不审计文件操作——「短时间大量文件改名」这个最硬手感
+  在 Linux 天然证据薄,不许硬凑。
+  【怎么找】断后路:进程命令行找破坏/擦除命令(还活着的相关
+  进程一并拎出来)。加密进程:cmdline/comm/exe 伪装比对、自删
+  二进制还在跑、open_fds 计数异常高(加密是批量开文件读写)。
+  就地加密残影:已删除仍被进程持有的普通文件(nlink=0)成批
+  同目录出现——「读原文件→删→写密文」的残影。勒索信:特征
+  文件名(HOW_TO_DECRYPT/README_FOR_DECRYPT 类)扫可写目录
+  快照/deepscan 清单/journal。
+  【交叉印证】破坏命令 × 可疑进程 × 勒索信落地 × 时间线,
+  对齐后给总判断:「加密进行中」「已加密收尾」「疑似前置
+  准备」还是「证据不足」,不许拔高。
+  【注意】未命中勒索信的正确读法是「已扫范围内未见」——没有
+  全量文件清单,别反推「无勒索信」;运维卷管理(磁盘初始化、
+  LVM 调整)也触发破坏命令,每条说出为什么不像运维:时间、
+  属主、前后动作。

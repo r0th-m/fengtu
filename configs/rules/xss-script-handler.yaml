@@ -1,0 +1,24 @@
+# 索图规则资产迁移(2026-09-25 对照表 §2.2,语义不变,签名内容未缩水;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜;scanner-ua 已同法迁移)
+# XSS:<script 注入与 HTML 事件处理器族(常见 onxxx= 属性枚举)
+id: xss-script-handler
+title: XSS script 标签/事件处理器特征
+severity: high
+target: any
+match:
+  query:
+    - "<script"
+    - "%3cscript"
+    - "onerror="
+    - "onload="
+    - "onclick="
+    - "onfocus="
+    - "onmouseover="
+    - "onsubmit="
+    - "alert("
+note: >-
+  反射型 XSS 的两类经典载荷:<script 标签(含 %3c 编码)与 HTML 事件
+  处理器(onerror=/onload= 等,OWASP XSS Filter Evasion 清单的高频
+  成员)。M1 只做大小编不敏感子串,不做 on\w+= 正则(保持确定性),
+  事件处理器枚举以公开清单高频项为准,覆盖度有限如实标注。

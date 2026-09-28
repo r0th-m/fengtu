@@ -1,0 +1,16 @@
+# 挖矿:命令行里的矿工参数特征(xmrig 系通用参数,非样本特指)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;签名值逐字保留。
+id: miner-tool-flags-cmdline
+title: 矿工参数特征(PSHistory)
+severity: medium
+target: any
+match:
+  command_contains:
+    - --donate-level
+    - --coin
+    - --algo rx/
+    - --randomx
+note: >-
+  PowerShell 历史里出现 xmrig 系矿工的通用参数(--donate-level、
+  --coin、--algo rx/ 随机 X 算法、--randomx)——命令行工具参数层面的
+  通用行为特征,medium 级待审。

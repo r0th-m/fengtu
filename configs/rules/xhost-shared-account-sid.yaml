@@ -1,0 +1,17 @@
+# 横向移动:同一带 SID 账户出现在多台主机(树庭 §8.2 跨机 canonical_key
+# 聚合);0.25.0-datasource-unlock 自树庭同名规则迁移。
+id: xhost-shared-account-sid
+title: 同一账户(SID)出现在多台主机
+severity: medium
+target: entity
+match:
+  entity_type: [account]
+  qualifier: [global]
+  min_hosts: 2
+note: >-
+  同一 SID 的账户实体(acct:sid:<SID> 为 global 身份)出现在 ≥2 台
+  主机——域账户/漫游账户跨机使用本身正常,但在入侵排查中是「共享账户
+  多主机登录」的聚合候选,medium 级待审;本机账户各机 SID 不同天然不误
+  并。注意:LocalSystem 等熟知 SID(S-1-5-18/19/20)在所有 Windows
+  主机上必然同值,跨主机必命中——属结构性已知噪音,待审时一眼排除
+  即可(schema 无排除语法,如实说明不硬塞)。

@@ -1,0 +1,125 @@
+{
+  "comment": "match 后缀语义对拍用例(0.22.0-treecourt-port):期望值由树庭 backend/app/rules.py 的 _match_fields 跑出(金标准),Go 侧 matchRule 焊死同一结果。键映射:丰图 field_eq ↔ 树庭裸键(eq);field_contains/field_prefix 双侧同名同义;树庭的 _endswith 丰图未实现(迁移规则用不到,如实标注)。同字段多条件 OR、跨字段 AND、大小写不敏感为对拍重点。",
+  "cases": [
+    {
+      "name": "eq 命中(数字事件 ID,大小写不敏感)",
+      "match": {"event_id_eq": ["7045"]},
+      "fields": {"event_id": 7045, "channel": "System"},
+      "expect": true
+    },
+    {
+      "name": "eq 拒子串误伤(17045 不是 7045)",
+      "match": {"event_id_eq": ["7045"]},
+      "fields": {"event_id": 17045},
+      "expect": false
+    },
+    {
+      "name": "eq 拒超串误伤(at.exe 不吃 acat.exe;contains 会误中,eq 不会)",
+      "match": {"exe_name_eq": ["at.exe"]},
+      "fields": {"exe_name": "ACAT.EXE"},
+      "expect": false
+    },
+    {
+      "name": "eq 命中(exe_name 大小写不敏感)",
+      "match": {"exe_name_eq": ["vssadmin.exe"]},
+      "fields": {"exe_name": "VSSADMIN.EXE"},
+      "expect": true
+    },
+    {
+      "name": "eq 多值 OR 命中第二值",
+      "match": {"exe_name_eq": ["vssadmin.exe", "wbadmin.exe", "bcdedit.exe"]},
+      "fields": {"exe_name": "WBADMIN.EXE"},
+      "expect": true
+    },
+    {
+      "name": "contains 命中嵌套 data 对象(evtx EventData 串化)",
+      "match": {"data_contains": ["delete shadows"]},
+      "fields": {"event_id": 4688, "data": {"CommandLine": "vssadmin Delete Shadows /all /quiet", "Image": "C:\\Windows\\System32\\vssadmin.exe"}},
+      "expect": true
+    },
+    {
+      "name": "contains 嵌套 data 不命中",
+      "match": {"data_contains": ["delete shadows"]},
+      "fields": {"event_id": 4688, "data": {"CommandLine": "vssadmin list shadows"}},
+      "expect": false
+    },
+    {
+      "name": "prefix 命中(路径前缀)",
+      "match": {"key_path_prefix": ["software\\microsoft\\windows\\currentversion\\run"]},
+      "fields": {"key_path": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"},
+      "expect": true
+    },
+    {
+      "name": "prefix 拒中段出现(前缀不是子串)",
+      "match": {"key_path_prefix": ["software\\microsoft"]},
+      "fields": {"key_path": "HKLM\\SOFTWARE\\Microsoft"},
+      "expect": false
+    },
+    {
+      "name": "prefix 多值 OR",
+      "match": {"remote_addr_prefix": ["10.", "192.168."]},
+      "fields": {"remote_addr": "192.168.1.20"},
+      "expect": true
+    },
+    {
+      "name": "同字段多条件 OR(eq 或 prefix 任一成立)",
+      "match": {"canonical_key_eq": ["ip:1.2.3.4"], "canonical_key_prefix": ["ip:1.2.3.4@"]},
+      "fields": {"canonical_key": "ip:1.2.3.4@hostA"},
+      "expect": true
+    },
+    {
+      "name": "同字段多条件 OR 全不成立",
+      "match": {"canonical_key_eq": ["ip:1.2.3.4"], "canonical_key_prefix": ["ip:1.2.3.4@"]},
+      "fields": {"canonical_key": "ip:9.9.9.9"},
+      "expect": false
+    },
+    {
+      "name": "跨字段 AND 一败全败(7045 但路径不命中)",
+      "match": {"event_id_eq": ["7045"], "data_contains": ["\\appdata\\", "\\temp\\", "\\programdata\\", "\\public\\"]},
+      "fields": {"event_id": 7045, "data": {"ImagePath": "C:\\Windows\\System32\\svchost.exe"}},
+      "expect": false
+    },
+    {
+      "name": "跨字段 AND 全中(7045 + 可写目录)",
+      "match": {"event_id_eq": ["7045"], "data_contains": ["\\appdata\\", "\\temp\\", "\\programdata\\", "\\public\\"]},
+      "fields": {"event_id": 7045, "data": {"ImagePath": "C:\\Users\\x\\AppData\\Local\\Temp\\svc.exe"}},
+      "expect": true
+    },
+    {
+      "name": "channel + event_id 双 eq AND",
+      "match": {"event_id_eq": ["1102"], "channel_eq": ["security"]},
+      "fields": {"event_id": 1102, "channel": "Security"},
+      "expect": true
+    },
+    {
+      "name": "channel 不符 AND 失败",
+      "match": {"event_id_eq": ["1102"], "channel_eq": ["security"]},
+      "fields": {"event_id": 1102, "channel": "System"},
+      "expect": false
+    },
+    {
+      "name": "bool 字段 eq(is_ioc=true)",
+      "match": {"is_ioc_eq": ["true"]},
+      "fields": {"is_ioc": true},
+      "expect": true
+    },
+    {
+      "name": "bool 字段 eq 不命中(false)",
+      "match": {"is_ioc_eq": ["true"]},
+      "fields": {"is_ioc": false},
+      "expect": false
+    },
+    {
+      "name": "缺字段条件不成立(getter 返回 None)",
+      "match": {"cmdline_contains": ["stratum+tcp"]},
+      "fields": {"event_id": 4688},
+      "expect": false
+    },
+    {
+      "name": "裸键 contains 存量语义(子串即中)",
+      "match": {"command": ["net use"]},
+      "fields": {"command": "net use \\\\host\\share"},
+      "expect": true
+    }
+  ]
+}

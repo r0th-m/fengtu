@@ -1,0 +1,13 @@
+# Linux:memfd 内存驻留二进制已回收(无文件攻击/内存马)
+# severity:树庭 critical,丰图词表最高 high(如实降档,语义不变)。
+id: linux-memfd-recovered-binary
+title: 内存驻留二进制已回收(memfd 内存马候选)
+severity: high
+target: any
+match:
+  source_eq: [recovered_binaries]
+  kind_eq: [memfd]
+note: >-
+  从 /proc/<pid>/fd 回收的 memfd 匿名内存文件:不落盘、只在内存里执行,
+  是无文件攻击/内存马的典型载体。样本已回收(artifact_sha256 可送查)。
+  (kind=exe 的已删可执行文件回收另有研判价值,本规则只盯 memfd。)

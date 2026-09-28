@@ -1,0 +1,14 @@
+name: app-utf8
+title: UTF-8 业务日志(合成样例;对 GBK 字节作负样本对照)
+kind: regex
+line_regex: '^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(?P<level>\S+)\s+(?P<message>.*)$'
+field_map:
+  ts: ts_raw
+  level: level
+  message: message
+ts_field: ts
+ts_formats:
+- '%Y-%m-%d %H:%M:%S'
+status: draft
+note: 合成样例(非真实样本);用 GBK 字节输入走 utf-8 解码(errors=replace),
+  对照乱码替换的确定性

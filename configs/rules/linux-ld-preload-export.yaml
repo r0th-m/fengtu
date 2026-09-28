@@ -1,0 +1,11 @@
+# Linux:shell 配置导出 LD_PRELOAD(全局预载劫持候选)
+id: linux-ld-preload-export
+title: shell 配置导出 LD_PRELOAD(预载劫持候选)
+severity: high
+target: any
+match:
+  exports_contains: [LD_PRELOAD]
+note: >-
+  /etc/profile、bashrc 等 shell 配置的 exports 里出现 LD_PRELOAD——
+  用户态 rootkit 与劫持型木马的经典常驻手法(全局预载恶意 .so hook
+  libc 函数)。正常系统几乎不需要在 shell 配置里设它。

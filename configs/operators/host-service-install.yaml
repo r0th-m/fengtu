@@ -1,0 +1,22 @@
+# 7045 新服务(金标准:v1 树庭 lateral-service-installed 全量 medium +
+# lateral-service-writable-dir 映像落可写目录 high,两规则合并两翼)。
+# 映像路径落可写目录/脚本解释器 → 两点咬合(强疑似);否则单点(疑似)。
+# 模式清单是 spec 数据(KB 语义),不写死。
+id: host-service-install
+title: 新服务安装(7045,两翼:全量+可写目录)
+family: host
+severity: high
+applicable_to:
+  log_types: [windows_event_log]
+params:
+  events: ["7045"]
+  writable_dir_patterns:
+    - '(?i)\\appdata\\'
+    - '(?i)\\temp\\'
+    - '(?i)\\tmp\\'
+    - '(?i)\\programdata\\'
+    - '(?i)\\users\\public\\'
+    - '(?i)\\windows\\(temp|debug)\\'
+implemented: true
+note: 7045 合法部署也触发——先看映像路径与创建账户;落可写目录是横向/木马服务强信号
+max_hits: 500

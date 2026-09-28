@@ -1,0 +1,17 @@
+# 横向移动:网络侦察/共享访问命令(PSHistory,low 级)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;签名值逐字保留。
+id: lateral-recon-cmdline
+title: 网络侦察/共享访问命令(PSHistory)
+severity: low
+target: any
+match:
+  command_contains:
+    - net use
+    - net view
+    - net share
+    - qwinsta
+    - query user
+note: >-
+  PowerShell 历史里出现内网侦察/共享访问命令:net use、net view、
+  net share、qwinsta、query user——横向移动前的踩点动作,管理员日常
+  也高频使用,low 级待审,价值在与登录/落点事件互证。

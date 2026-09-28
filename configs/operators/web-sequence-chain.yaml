@@ -1,0 +1,29 @@
+# 通用 sequence 链式引擎(0.21.0-operator-port,对照表中档;索图 STAT
+# runner sequence 语义迁移)。本文件同时是索图 stats/auth-bruteforce-success.yaml
+# 的通用版配置样例(同 src_ip+path 复合键,401/403×5 → 窗口内 200)。
+#
+# 与 web-bruteforce-chain 的分工(语义重叠处如实说明):
+#   - web-bruteforce-chain = 爆破特化版,继续服役不动:失败计数达阈才开窗、
+#     一段爆破一次账(防刷屏)、ts 缺失源降级按行距窗(window_lines);
+#   - web-sequence-chain = 通用引擎:任意 2~3 步 {field, in} 链全走 params
+#     驱动(扫描→打点→利用等新案型改配置即得,不写 Go);滚动窗口(每步从
+#     上一命中步起算),ts 缺失事件不参与(时间未知不硬算,计数如实进
+#     detail),首步 min_first_step_count 防偶然闸,锚点=末步命中行。
+id: web-sequence-chain
+title: 通用链式序列(同键 steps 窗口链)
+family: web
+severity: high
+applicable_to:
+  log_types: [web_access]
+params:
+  # 通用版配置样例 = 索图 auth-bruteforce-success 迁移(只写协议常量
+  # 状态码,不含任何案件特定值)
+  key_fields: [src_ip, path]
+  steps:
+    - {field: status, in: ["401", "403"]}
+    - {field: status, in: ["200"]}
+  window_seconds: 300        # 末次失败后 5 分钟内的成功才成链
+  min_first_step_count: 5    # 失败至少 5 次(防偶然试错误判)
+implemented: true
+note: 链式命中≠成功入侵(正常用户多次试错后成功同样符合),命中只进待审区交人复核
+max_hits: 500

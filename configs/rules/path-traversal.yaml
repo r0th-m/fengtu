@@ -1,0 +1,22 @@
+# 索图规则资产迁移(2026-09-25 对照表 §2.2,语义不变,签名内容未缩水;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜;scanner-ua 已同法迁移)
+# 路径穿越:../ 序列(含编码变体)与敏感系统文件
+# target=any:raw 兜底匹配,raw_t0 等未归一源也能吃到这条(target=any 语义)
+id: path-traversal
+title: 路径穿越/敏感系统文件访问
+severity: high
+target: any
+match:
+  raw:
+    - "../"
+    - "..%2f"
+    - "..\\"
+    - "/etc/passwd"
+    - "/etc/shadow"
+    - "boot.ini"
+    - "win.ini"
+note: >-
+  目录穿越标志(../ 与 %2f 编码、反斜杠变体)及 Unix/Windows 敏感文件
+  (/etc/passwd、boot.ini 等)是 OWASP 路径穿越测试的公开标志物。
+  用 raw 整行兜底:路径/查询任何一段出现即命中,不依赖归一字段齐全。

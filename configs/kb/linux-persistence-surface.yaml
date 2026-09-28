@@ -1,0 +1,24 @@
+# 启发式知识库内置条目:Linux 驻留面研判(0.22.0-treecourt-port)。
+id: linux-persistence-surface
+title: Linux 驻留面:窝比 Windows 散,同一目标多处出现即复活机制
+applies_to: [linux, persistence, host-triage]
+content: >-
+  【思路】Linux 持久化的面比 Windows 散:systemd 单元、cron、
+  udev 规则、pam 钩子、profile.d/bashrc、rc.local、ld.so.preload、
+  authorized_keys。研判总则不变:合法服务不从可写目录启动,
+  同一目标出现在两处以上 = 复活机制(删一处从另一处长回来)。
+  持久化老三样里 cron 最常被忘查。
+  【怎么找】按面过:①systemd——ExecStart 指向 /tmp//dev/shm//
+  var/tmp 的(合法服务几乎不从这些位置启动);②cron——curl/
+  wget 拉脚本、base64 载荷、可写目录路径;③udev——RUN/PROGRAM
+  指向 /dev/shm(内存文件系统,重启即失,高隐蔽,基本无合法
+  形态);④pam_exec 钩子(登录即执行,凭据窃取/后门通道);
+  ⑤shell 配置导出 LD_PRELOAD(用户态 rootkit 入门级手法);
+  ⑥authorized_keys——弱钥(RSA/DSA ≤1024)、forced_command、
+  占位符/不可归因注释。账户面:UID 0 克隆(root 之外的 UID 0
+  就是后门,无合法形态)、空密码字段(无口令可登录)。
+  【交叉印证】持久化项创建时间 × 可疑登录时间 × 可写目录落地
+  物,咬合才是「进来后落的脚」;钥匙+单元双保险是常见组合。
+  【注意】系统自带单元与包安装的别凑数;少数合法 MFA/审计
+  方案也用 pam_exec,核模块参数;每把被标的公钥都要能说出是
+  谁、从哪台管理机来、该不该在——命中≠实锤,判断权归人。

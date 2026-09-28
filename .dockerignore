@@ -1,0 +1,25 @@
+# Docker 构建上下文闸:凭证/台架产物/依赖缓存一律不进镜像构建。
+# (.verify 含真实案件派生数据,.env 含口令——永不入库同纪律。)
+.git
+.verify
+.env
+.env.*
+!.env.example
+data
+node_modules
+frontend/node_modules
+# 前端产物在镜像内阶段一重建,本地 dist 不带入(占位页除外)
+internal/webui/dist/*
+!internal/webui/dist/placeholder.html
+# 测试语料/工具/文档不进镜像
+testdata
+golden
+tools
+docs
+deploy
+*.md
+# 部署文件自身
+Dockerfile
+docker-compose.yml
+.dockerignore
+.bin

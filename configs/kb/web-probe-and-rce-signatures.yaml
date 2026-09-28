@@ -1,0 +1,30 @@
+# 启发式知识库内置条目(0.21.0-operator-port):Web 探测/命令执行/马名
+# 签名命中研判。覆盖规则 abnormal-method / cmd-exec-params /
+# path-traversal / sensitive-path / webshell-filename / waf-checker-ua
+# (对照表 §2.2 研判思路列合并沉淀)。
+id: web-probe-and-rce-signatures
+title: Web 探测·命令执行·马名签名命中:怎么解读、往哪挖
+applies_to: [web, recon, webshell]
+content: >-
+  【命中意味着什么】这一族是攻击面探测的第一筛子:abnormal-method
+  (PUT/DELETE/TRACE/TRACK)是写方法/跨站追踪探测,REST 站点 PUT/DELETE
+  正常,故只 info 级;path-traversal(../ 与编码变体、/etc/passwd、
+  boot.ini)几乎无业务正当理由;sensitive-path(/.git//.env/后台/备份
+  文件)是前置踩点;cmd-exec-params(cmd=/exec=/system()//bin/sh/whoami)
+  是 RCE 探测直接信号;webshell-filename(c99/r57/wso/chopper 等公开
+  马名)访问即嫌疑——要么被植入,要么被探测。waf-checker-ua 是归因
+  提示而非攻击:命中说明站点挂在安全服务之后,日志首列 src_ip 是
+  回源节点,真实客户端在 XFF——别把回源节点误判为攻击者。
+  【怎么解读】第一刀先切 status:404/403 结尾的探测是噪音主体,200
+  结尾的才值得逐条看;第二刀切形态:字典式批量(path 枚举、方法
+  枚举)是扫描器过境,单点精准命中(直打马名、直打敏感文件)说明
+  对方已知结构,危险等级上调。webshell 文件名 + 200 + 小响应(马
+  页本体)或+该 path 后续有 POST(马在执行)是「马已落地」高疑组合。
+  【下一步往哪挖】①200 命中的 path 逐个拿给业务方确认「这文件该
+  不该存在」;②马名命中的,按时间窗查该 path 的全部后续请求(POST
+  体、bytes 分化),并转主机侧查同窗口新写文件/新进程;③path-
+  traversal 命中 200 的,确认响应体是不是目标文件内容(bytes 与
+  /etc/passwd 量级比对是快招);④sensitive-path 命中 200 的,先当
+  泄露处置(改密、下架),再查谁拿的;⑤waf-checker-ua 命中的,
+  复核同 IP 其他请求是否带各异 XFF 佐证回源,后续所有 src_ip 归因
+  改读 XFF。

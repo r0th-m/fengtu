@@ -1,0 +1,23 @@
+# 挖矿:矿池域名实体(实体层,canonical_key 比对之外的名称特征)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;域名特征清单逐字保留
+# (公开服务类别名,非某案样本特指值)。
+id: miner-pool-domain-entity
+title: 矿池域名实体
+severity: medium
+target: entity
+match:
+  entity_type: [domain]
+  raw_value_contains:
+    - pool.
+    - stratum
+    - minexmr
+    - nanopool
+    - f2pool
+    - antpool
+    - supportxmr
+    - hashvault
+    - minergate
+note: >-
+  域名实体的名字含常见矿池/矿池服务特征子串(pool.、stratum、
+  minexmr/nanopool/f2pool/antpool/supportxmr/hashvault/minergate 等
+  公开矿池服务名)——对实体层做 medium 级标注,待审由人结合连接判定。

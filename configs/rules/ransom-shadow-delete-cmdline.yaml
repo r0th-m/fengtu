@@ -1,0 +1,21 @@
+# 勒索前置:4688 命令行删影/改启动恢复(通用行为,不写样本特指值)
+# 0.22.0-treecourt-port 自树庭 ransom-shadow-delete-cmdline 迁移:
+# 树庭对 eventlog_security 的 fields(嵌套字段原样平铺,含 CommandLine)
+# 做子串匹配 → 丰图对 evtx data(EventData 嵌套对象,引擎串化后匹配)
+# 做同语义子串匹配;签名值零缩水。
+id: ransom-shadow-delete-cmdline
+title: 删影/破坏备份命令行(4688)
+severity: high
+target: any
+match:
+  channel_eq: [Security]
+  event_id_eq: ["4688"]
+  data_contains:
+    - delete shadows
+    - shadowcopy delete
+    - delete catalog
+    - recoveryenabled no
+note: >-
+  4688 进程创建事件的命令行含 vssadmin delete shadows / wmic shadowcopy
+  delete / wbadmin delete catalog / bcdedit 关启动恢复——勒索软件动手前
+  先断恢复后路的通用行为;正常运维也可能执行,high 级待审由人判定。

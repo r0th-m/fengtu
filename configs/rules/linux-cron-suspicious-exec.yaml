@@ -1,0 +1,13 @@
+# Linux:cron/计划任务可疑命令(可写目录执行、拉脚本、编码载荷)
+# source 四面:逐用户汇总/系统 crontab 与 cron.d/anacrontab/spool。
+id: linux-cron-suspicious-exec
+title: cron 可疑条目(临时目录/远程拉取/编码载荷)
+severity: medium
+target: any
+match:
+  source_eq: [crontab_all_users, cron_sys, anacrontab, cron_spool]
+  command_contains: ["/tmp/", "/dev/shm", "/var/tmp/", "curl ", "wget ", "base64"]
+note: >-
+  crontab、cron.d、anacrontab、spool 条目的 command 含 /tmp/、/dev/shm、
+  /var/tmp/ 可写目录路径,或 curl/wget 远程拉取、base64 编码载荷——
+  定时任务落地的通用特征(合法运维脚本也可能远程拉取,由人判定)。

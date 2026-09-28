@@ -1,0 +1,6 @@
+{"ts":"2024-05-01T08:00:01","level":"INFO","logger":"app","msg":"up","pid":123}
+{"ts":"2024-05-01T08:00:02","level":"WARN","logger":"app","msg":"slow","extra":{"a":1}}
+not json at all
+["array","not","object"]
+{"ts":"bad-ts","level":"INFO"}
+{"level":"INFO","msg":"no ts field"}

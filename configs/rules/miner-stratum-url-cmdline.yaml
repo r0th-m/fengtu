@@ -1,0 +1,15 @@
+# 挖矿:命令行里的 stratum 协议地址(PSHistory)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;签名值逐字保留。
+id: miner-stratum-url-cmdline
+title: stratum 协议矿池地址(PSHistory)
+severity: high
+target: any
+match:
+  command_contains:
+    - stratum+tcp
+    - stratum+ssl
+    - stratum://
+note: >-
+  PowerShell 历史里出现 stratum+tcp / stratum+ssl / stratum:// 矿池
+  协议地址——矿工连接矿池的通用 URL 形态,日常运维几乎不会出现,
+  high 级待审。

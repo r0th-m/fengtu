@@ -1,0 +1,12 @@
+# Linux:conntrack 异常出站(SYN_SENT + UNREPLIED,扫描/回连不通候选)
+id: linux-conntrack-unreplied-out
+title: conntrack 未应答出站(SYN_SENT/UNREPLIED)
+severity: low
+target: any
+match:
+  state_eq: [SYN_SENT]
+  flags_contains: [UNREPLIED]
+note: >-
+  内核连接跟踪里 SYN_SENT 且 UNREPLIED 的条目:发出的连接一直没收到
+  回应——端口扫描、C2 回连不通、或对端防火墙丢包的共同特征。
+  k8s 集群内健康探测也会产生,由人结合目的地址判定。

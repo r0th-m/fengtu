@@ -1,0 +1,13 @@
+# 挖矿:矿池 stratum 常用端口外联(通用端口集,非样本特指,§16)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;端口集逐字保留。
+id: miner-pool-port-outbound
+title: 矿池常用端口外联(stratum)
+severity: high
+target: any
+match:
+  remote_port_eq: ["3333", "4444", "5555", "7777", "8333", "14444"]
+  state_eq: [established]
+note: >-
+  net_connection 远端端口命中矿池 stratum 常用端口(3333/4444/5555/7777/
+  8333/14444)且连接已建立——挖矿外联的通用特征。这些端口也有合法用途,
+  high 级待审由人结合进程与 SRUM 判定。

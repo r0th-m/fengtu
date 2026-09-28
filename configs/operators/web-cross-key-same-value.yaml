@@ -1,0 +1,25 @@
+# 异键同值聚簇:同一稀有值(如罕见 UA)出现在多个键(如多 src_ip)上
+# (切片七实现)。前置结构性排除主流浏览器 UA 系(Mozilla/Chrome/Safari
+# 系跨 IP 复现是互联网常态,排除模式是 spec 数据);df 上限控「稀有」,
+# min_keys 控「跨键」。
+# 0.21.0:新增 exclude_kb 引用(对齐索图 cross_key_same_value)——排除
+# 清单走 configs/excludes/<名>.yaml 人可编辑文件,值小写化后子串包含;
+# 与 exclude_value_patterns 正则并行,任一命中即排除(宁漏勿冤)。
+id: web-cross-key-same-value
+title: 异键同值(多键共享稀有值)
+family: web
+severity: low
+applicable_to:
+  log_types: [web_access]
+params:
+  value_field: ua
+  key_field: src_ip
+  min_keys: 3
+  max_df: 5
+  exclude_kb: common_uas
+  exclude_value_patterns:
+    - '(?i)^mozilla/4\.'
+    - '(?i)^mozilla/5\.0.*(chrome|safari|firefox|edge)'
+implemented: true
+note: 稀有值跨多键=同一工具换址迹象;先查该值是什么再定性
+max_hits: 500

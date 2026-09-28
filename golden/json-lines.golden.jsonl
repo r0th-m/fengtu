@@ -1,0 +1,6 @@
+{"line_no":1,"kind":"event","ts_raw":"2024-05-01T08:00:01","ts_utc":"2024-05-01T00:00:01Z","norm":{"level":"INFO","logger":"app","message":"up","extras":{"pid":123}},"raw":"{\"ts\":\"2024-05-01T08:00:01\",\"level\":\"INFO\",\"logger\":\"app\",\"msg\":\"up\",\"pid\":123}","continuation_lines":0}
+{"line_no":2,"kind":"event","ts_raw":"2024-05-01T08:00:02","ts_utc":"2024-05-01T00:00:02Z","norm":{"level":"WARN","logger":"app","message":"slow","extras":{"extra":{"a":1}}},"raw":"{\"ts\":\"2024-05-01T08:00:02\",\"level\":\"WARN\",\"logger\":\"app\",\"msg\":\"slow\",\"extra\":{\"a\":1}}","continuation_lines":0}
+{"line_no":3,"kind":"bad","ts_raw":null,"ts_utc":null,"norm":{},"raw":"not json at all","continuation_lines":0,"reason":"行内 JSON 解析失败: Expecting value"}
+{"line_no":4,"kind":"bad","ts_raw":null,"ts_utc":null,"norm":{},"raw":"[\"array\",\"not\",\"object\"]","continuation_lines":0,"reason":"行内 JSON 非对象(每行须为一个 JSON 对象)"}
+{"line_no":5,"kind":"bad","ts_raw":"bad-ts","ts_utc":null,"norm":{},"raw":"{\"ts\":\"bad-ts\",\"level\":\"INFO\"}","continuation_lines":0,"reason":"时间解析失败(字段 'ts',ts_formats 全部不匹配)"}
+{"line_no":6,"kind":"bad","ts_raw":null,"ts_utc":null,"norm":{},"raw":"{\"level\":\"INFO\",\"msg\":\"no ts field\"}","continuation_lines":0,"reason":"缺时间字段 'ts'"}

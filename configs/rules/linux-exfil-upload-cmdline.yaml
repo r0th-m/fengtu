@@ -1,0 +1,13 @@
+# Linux 外泄:上传/网盘通道命令行(curl -T/rclone 等,通用行为)
+id: linux-exfil-upload-cmdline
+title: 上传/网盘通道(进程命令行)
+severity: medium
+target: any
+match:
+  source_eq: [ps_auxwwf]
+  command_contains: ["curl -t ", "curl --upload-file", "wget --post", rclone, lftp]
+note: >-
+  进程命令行中出现明确上传动作:curl -T/--upload-file、wget --post、
+  rclone(网盘同步头名)、lftp。外泄通道的通用工具;运维备份也用,
+  由人看目标地址与方向。(scp/rsync 单列 low 级,见
+  linux-exfil-copy-cmdline,避免一窝蜂。)

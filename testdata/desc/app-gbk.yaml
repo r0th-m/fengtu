@@ -1,0 +1,14 @@
+name: app-gbk
+title: GBK 业务日志(合成样例,声明 encoding)
+kind: regex
+line_regex: '^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(?P<level>\S+)\s+(?P<message>.*)$'
+field_map:
+  ts: ts_raw
+  level: level
+  message: message
+ts_field: ts
+ts_formats:
+- '%Y-%m-%d %H:%M:%S'
+encoding: gbk
+status: draft
+note: 合成样例(非真实样本),覆盖 GBK→UTF-8 解码的 golden 对照

@@ -1,0 +1,21 @@
+# 索图规则资产迁移(2026-09-25 对照表 §2.2,语义不变,签名内容未缩水;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜;scanner-ua 已同法迁移)
+# SQLi:UNION SELECT 联合查询族(含常见 URL 编码变体与恒真条件)
+id: sqli-union-select
+title: SQL 注入 UNION SELECT 特征
+severity: high
+target: any
+match:
+  query:
+    - "union select"
+    - "union%20select"
+    - "union+select"
+    - "union all select"
+    - "or 1=1"
+    - "or%201=1"
+    - "information_schema"
+note: >-
+  通用 SQL 注入特征:UNION SELECT 联合查询拖数据、恒真条件(or 1=1)、
+  读 information_schema 元数据,均为公开 SQLi 教程/OWASP 测试指南的
+  标志性子串;覆盖空格/+/ %20 三种编码形态。

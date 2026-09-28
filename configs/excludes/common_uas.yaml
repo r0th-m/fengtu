@@ -1,0 +1,41 @@
+# 排除清单:已知爬虫与库默认 UA token(自索图 backend/kb/common_uas.yaml
+# 2026-09-25 迁移,token 逐字未动)。人可编辑数据文件;装载即校验(缺文件/
+# 坏结构 = 算子注册表拒载,不静默)。
+# 匹配语义:值小写化后子串包含(索图 2026-08-05 实测定性:真实爬虫 UA 形如
+# 'Mozilla/5.0 (compatible; Googlebot/2.1; ...)',词根不在开头,startswith
+# 失效,改 contains——对照表/索图文集所称「前缀匹配」实即此子串包含语义;
+# 宁漏勿冤:排除只缩小聚簇,不产生命中)。
+# 引用方式:算子 YAML params 里写 exclude_kb: common_uas(文件名去 .yaml)。
+id: common_uas
+title: 常见爬虫与库默认 UA token 排除清单
+tokens:
+  # 爬虫/蜘蛛(含 Googlebot/Baiduspider 等 compatible 形态)
+  - googlebot
+  - baiduspider
+  - bingbot
+  - yandexbot
+  - duckduckbot
+  - slurp
+  - spider
+  - crawler
+  - bot/
+  - bot;
+  - bot(
+  # 命令行/库默认 UA
+  - curl/
+  - wget/
+  - python-requests
+  - python-urllib
+  - go-http-client
+  - java/
+  - okhttp
+  - apache-httpclient
+  - node-fetch
+  - axios/
+  - libwww-perl
+  - httpie
+  - scrapy
+note: >-
+  依据:公开已知爬虫标识(Googlebot/Baiduspider 等均含 bot/spider 词根)
+  与主流 HTTP 客户端库默认 UA 前缀。宁漏勿冤:排除只缩小聚簇范围,
+  不产生任何命中;新前缀人审后追加,不改代码。

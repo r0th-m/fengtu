@@ -1,0 +1,16 @@
+# 跨层:同公网实体(IP)跨源复现(≥N 源;私网/回环/链路本地/组播结构性
+# 排除——协议结构不是案件值)。每类源的取值字段是 spec 数据。
+id: cross-entity-multi-source
+title: 公网实体跨源复现(同 IP ≥N 源)
+family: cross
+severity: high
+applicable_to:
+  log_types: [web_access, windows_event_log]
+params:
+  min_sources: 2
+  ip_fields:
+    web_access: [src_ip]
+    windows_event_log: [IpAddress, SourceNetworkAddress]
+implemented: true
+note: 只说明「有交集」;出入方向与各源语义要人读
+max_hits: 500

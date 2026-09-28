@@ -1,0 +1,28 @@
+# dpkg.log(Debian 系包管理日志)描述文件——0.32.0-linuxsc 新增。
+#
+# 格式契约(对 spec 写,deb 系恒此):
+#   2026-07-01 10:00:00 install passwd:amd64 <none> 0.80-1
+#   2026-07-01 10:00:00 status installed passwd:amd64 0.80-1
+#   2026-07-01 10:00:00 startup archives unpack
+# 行首恒 ISO 本地时间;第二列是 dpkg 动词(install/upgrade/remove/purge/
+# status/configure/trigproc/startup/disappear,不枚举,原样进 norm.action);
+# 动词后的参数结构随动词变(status 行第三列是状态词不是包名——不硬猜
+# 语义,rest 整段进 norm.message 留证)。
+# RHEL 系对应物 yum.log 是 syslog 无年时间戳(strptime %d 不认空格补齐
+# 日,desc 走不通),由原生 parser linux_yumlog 覆盖,不走 desc。
+name: linux-dpkg
+title: dpkg 包管理日志(Debian 系)
+kind: regex
+log_type: audit_log
+line_regex: '^(?P<ts>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<action>\S+)(?: (?P<message>.*))?$'
+field_map:
+  ts: ts_raw
+  action: action
+  message: message
+ts_field: ts
+ts_formats:
+- '%Y-%m-%d %H:%M:%S'
+status: enable
+note: 轮转文件 dpkg.log.1 同契约由映射表同 desc 路由;.gz 轮转的压缩
+  文件不接(文本解析器不解压,登记 raw 留证)。包安装/移除时间线是
+  「什么时候被装了什么」的审计面,与进程/持久化面互证。

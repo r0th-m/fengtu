@@ -1,0 +1,12 @@
+# Linux 勒索:勒索信文件名特征(shm/tmp 目录快照)
+id: linux-ransom-note-shmtmp
+title: 勒索信文件名特征(shm/tmp 快照)
+severity: high
+target: any
+match:
+  source_eq: [shm_tmp_listing]
+  name_contains: [how_to_decrypt, readme_for_decrypt, recover_files, decrypt_instruction, restore_files, how_to_recover]
+note: >-
+  /dev/shm、/tmp、/var/tmp 目录快照中出现典型勒索信文件名特征。
+  命中基本无合法解释。未命中不可反推无勒索信——采集端无全量文件
+  清单,如实说明。

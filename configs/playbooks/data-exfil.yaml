@@ -1,0 +1,96 @@
+# 数据外泄排查·意图链模板(0.22.0-treecourt-port;由树庭 data-exfil-v1
+# 手册蒸馏为意图树——通用行为链:大流量外联 → 上传量印证 → 压缩工具
+# 痕迹 → 网盘/传输通道 → 时间窗打包现场 → 上传命令行 → 异常时段)
+id: data-exfil
+version: 1
+title: 数据外泄排查(意图链模板)
+description: >-
+  数据外泄排查:外联与 SRUM 上传量 Top 找大流量通道,UserAssist/Prefetch
+  找压缩工具(7z/rar)痕迹,规则命中与外联互证网盘/文件传输通道,发现链
+  时间窗内找压缩包/大文件落地(EFU+$MFT),命令行历史找上传动作,时间线
+  看异常时段活动。数据缺失如实报「数据未覆盖」,不硬编。
+os: windows
+goal: >-
+  回答「数据有没有被拿走」:收集 → 打包 → 传输三段各找证据并互证,
+  只有单边证据的如实标注证据单薄,判断权归人。
+intents:
+  - key: big_outbound
+    host_scope: each
+    text: 外联里有没有大流量/非常规通道(公网非常见端口/文件传输协议)?
+    ask: >-
+      外泄先看水管粗不粗:盯公网非常见端口的长连接、陌生进程持有的
+      外联、FTP/SFTP/rsync 类文件传输协议端口(20/21/22/873/989/990)
+      的连接。系统更新、浏览器正常外联别报;每条给怀疑理由。
+  - key: upload_top
+    host_scope: each
+    text: SRUM 上传量 Top 应用里有没有与身份不符的大户?
+    ask: >-
+      外泄在上传量上藏不住:SRUM 网络用量按 bytes_sent 排序看——上传量
+      与身份不符的应用(编辑器/陌生进程上传几个 G)、压缩工具或网盘
+      客户端进程的上传记录、和可疑外联对得上的进程。浏览器/网盘正常
+      同步是常见大户,报之前想清楚哪里不对。
+  - key: compression
+    host_scope: each
+    text: 执行痕迹里有没有压缩工具(7z/rar 打包待传)?
+    ask: >-
+      外泄前多半要打包:UserAssist/Shimcache/Prefetch/JumpList 里找压缩
+      工具痕迹——7z、WinRAR、Bandizip、好压这类,尤其运行次数少(临时
+      用一次)、运行时间和可疑外联对得上的。JumpList 最近打开文件能告诉
+      你它打包了什么。日常办公用压缩软件不算。可跑 exfil-compression-tool-prefetch
+      规则命中再核实锚点。
+  - key: cloud_channels
+    after: [big_outbound]
+    host_scope: each
+    text: 网盘/文件传输通道能不能双向互证(命中 × 外联)?
+    ask: >-
+      看传去哪儿了:网盘/传输服务线索和外联连接放一起互证——两边都对
+      得上的通道重点说;只有一边的如实标注证据单薄,待人工核。公司
+      本来就用的网盘/同步盘别当外泄报,说清楚排除理由。
+  - key: staging
+    after: [compression]
+    host_scope: each
+    text: 时间窗内有没有压缩包/大文件落地(打包现场;传完即焚)?
+    ask: >-
+      拿前序时间窗和 IOC 找「打包现场」:EFU 窗口聚合与行级明细、MFT
+      行级(含已删除)按窗过滤——盯窗内新建的 zip/rar/7z 大文件、落地
+      后又删掉的压缩包(传完即焚)、临时目录里成批汇集的文档/表格。
+      查不到的方向如实说,别编文件名。
+  - key: upload_cmds
+    host_scope: each
+    text: 命令行历史里有没有上传动作(curl -T/rclone/pscp/ftp 批处理)?
+    ask: >-
+      翻命令行历史找上传动作:curl -T/--upload-file、rclone copy/move、
+      pscp/winscp 脚本、ftp 批处理、Invoke-WebRequest POST 大文件、
+      certutil 编码外带;也看加密压缩(7z a -p、rar a -hp,防 DLP 的
+      经典动作)。正常运维命令别报,每条指出可疑点;该通道未采集
+      如实报未覆盖。
+  - key: offhours
+    after: [staging, upload_top, cloud_channels]
+    host_scope: each
+    text: 异常时段活动时间线:「收集 → 打包 → 外联传输」的链排在什么钟点?
+    ask: >-
+      收尾看钟点:按前序发现的时间提示拉时间线,串「收集 → 打包 → 外联
+      传输」的链;重点说活动时段——深夜/节假日/离职前后的集中活动是
+      外泄典型钟点。时段正常或排不出链的,如实说,别硬连。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的)
+  - key: independent_review
+    after: [offhours, upload_cmds]
+    host_scope: all
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: coverage_gate
+    after: [offhours, upload_cmds, independent_review]
+    host_scope: all
+    text: 覆盖闸收官:哪些品类查过、哪些没查过,还有没有未核实的疑点?
+    ask: >-
+      收官宣告:对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默;
+      未核实疑点列成清单交给人。覆盖不全如实标,不硬编结论。

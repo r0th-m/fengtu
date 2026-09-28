@@ -1,0 +1,15 @@
+# periodicity 周期:信标检测(三闸:样本数 + 跨度 + cv)。
+# 需要 ts;无时区源如实不参与(不猜时区是硬纪律)。
+id: web-beacon-periodicity
+title: Web 周期信标(间隔 cv 三闸)
+family: web
+severity: medium
+applicable_to:
+  log_types: [web_access]
+params:
+  min_samples: 12
+  min_span_seconds: 3600
+  max_cv: 0.15
+implemented: true
+note: 同 src_ip 请求间隔变异系数低于阈且样本/跨度达闸;弱信号,先查 IP 归属
+max_hits: 500

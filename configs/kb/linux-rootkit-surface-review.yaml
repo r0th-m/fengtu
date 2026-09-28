@@ -1,0 +1,23 @@
+# 启发式知识库内置条目:Linux rootkit 面研判(0.32.0-linuxsc)。
+id: linux-rootkit-surface-review
+title: Linux rootkit 面:eBPF/cBPF/LKM 三族各看各的
+applies_to: [linux, host-triage, rootkit]
+content: >-
+  【思路】现代 Linux rootkit 三族手法不同、可见面不同,别用一把
+  尺子:eBPF(TripleCross/Boopkit 类,bpftool prog/map/link/net
+  四清单 + /sys/fs/bpf + ip -d link 的 xdp 标志)、cBPF 嗅探
+  (BPFDoor 本体型,走 SO_ATTACH_FILTER,bpftool 完全不可见——
+  看 /proc/*/stack 的 packet_recvmsg 与 /proc/net/packet)、
+  LKM(Diamorphine/REPTILE 类,lsmod//proc/modules//sys/module
+  三源对 diff,/sys 有而 lsmod 无=隐藏模块)。
+  【怎么找】本版本这些产物以原文登记(raw)入库可检索:
+  RootkitHunt/ 与 Kernel/ 下的 bpftool 四清单、module_source_diff、
+  proc_net_packet、proc_stack_packet_recvmsg 等。检索关键词
+  (packet_recvmsg、xdp、非预期模块名)定位,原文对照研判。
+  tainted 非 0 = 加载过 OOT/未签名模块,结合 dmesg taint 行看。
+  【交叉印证】rootkit 要活就要通道:与网络面(conntrack 未应答
+  出站、异常监听)和持久化面(谁加载它:modprobe.d/
+  modules-load.d/单元)互证。
+  【注意】这些面解析器化在暂缓清单(见 operator-inventory),
+  当前是人工研判面;采集端覆盖缺口(root 权限不足时 stack/
+  内核指针读不到)看 _COLLECT_ERRORS.log,别把没采到当没有。

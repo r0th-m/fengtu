@@ -1,0 +1,24 @@
+# 进程树异常:相似进程名 × 异常位置(切片七实现)。
+# 「名」似系统进程(精确同名或编辑距离 1 的形近,如 svch0st)且「位」不在
+# 系统目录白名单——白名单是 spec 数据(KB 语义,不写死代码);形近名落在
+# 哪都判(白名单护的是真名),精确同名要求位置异常才判。
+id: host-process-tree
+title: 进程树异常(相似名×异常位置)
+family: host
+severity: medium
+applicable_to:
+  log_types: [windows_event_log]
+params:
+  events: ["4688"]
+  lookalike_targets: [svchost, lsass, csrss, explorer, rundll32, services,
+    winlogon, taskhost, sihost, runtimebroker]
+  system_dirs:
+    - 'c:\windows\system32\'
+    - 'c:\windows\syswow64\'
+    - 'c:\windows\winsxs\'
+    - 'c:\windows\servicing\'
+    - 'c:\program files\'
+    - 'c:\program files (x86)\'
+implemented: true
+note: 仿冒经典手法;核实父进程与命令行——便携版/自更新也会落用户目录
+max_hits: 500

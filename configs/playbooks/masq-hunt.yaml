@@ -1,0 +1,107 @@
+# 冒名驻留排查·意图链模板(0.22.0-treecourt-port;由树庭 masq-hunt-v1
+# 手册蒸馏为意图树——通用模式(Win/Linux 通用):名字像系统组件 → 位置
+# 不在该在的地方 → 持久化机制里有它 → 进程里活着 → 外联印证 → 执行痕迹
+# → 篡改信号 → 正品对账排除 → 时间线)
+id: masq-hunt
+version: 1
+title: 冒名驻留排查(意图链模板)
+description: >-
+  冒名程序(masquerade)驻留的通用排查法:相似名候选 → 位置异常 →
+  驻留互证(持久化×运行中)→ 外联印证(可疑程序及父进程)→ 执行痕迹
+  与首末次活跃 → 篡改/时间戳异常 → 正品对账排除 → 时间线串链。
+  排除纪律:正品同名人/云代理/企业软件先排除再下结论。
+  数据缺失如实报「数据未覆盖」,不硬编。
+os: any
+goal: >-
+  揪出「名字像系统组件但身子不对」的驻留程序:撞名≠恶意,候选要过
+  位置/驻留/外联/对账多道闸;排除不了才往恶意报,证据列全交人定。
+intents:
+  - key: name_suspects
+    host_scope: each
+    text: 哪些程序名字像系统组件(撞名/近形仿冒)?
+    ask: >-
+      先把「像系统组件的名字」全拎出来:与系统服务/进程名撞名
+      (Dnscache/svchost/lsass/services/smss/csrss/systemd/cron/kthreadd/
+      init)或近形(svch0st/scvhost/lsasss/kworker 伪装)。撞名≠恶意——
+      只列候选,后面几步排除。系统原生进程别报,报了就说出哪一项不对。
+  - key: location_anomaly
+    after: [name_suspects]
+    host_scope: each
+    text: 候选里谁站在不该在的位置(非标准路径的系统名)?
+    ask: >-
+      系统组件该在的位置:Windows 是 System32/SysWOW64/Program Files;
+      Linux 是 /usr/sbin|/sbin|/usr/bin|/usr/libexec。候选里谁站在
+      ProgramData/Temp/用户目录/AppData、/tmp//dev/shm/home/隐藏路径?
+      非标准位置的「系统名」程序是第一优先怀疑对象;标准位置的跳过
+      (对账那步还会复核)。
+  - key: residency_confirm
+    after: [location_anomaly]
+    host_scope: each
+    text: 驻留确认:持久化机制里有它 × 进程里活着?
+    ask: >-
+      三条同时成立 = 活跃驻留:①持久化表里有它(计划任务/cron/systemd/
+      自启动)②进程表里活着 ③服务表里没有同名正规服务(仿冒者走任务
+      不走服务)。只注册不跑=休眠潜伏,只跑不注册=临时执行,分开标注,
+      别混为一谈。
+  - key: outbound_verify
+    after: [location_anomaly]
+    host_scope: each
+    text: 可疑程序及其父进程的外联有没有异常(心跳/非常见端口/大出站)?
+    ask: >-
+      查可疑程序和它父进程的网络外联:公网 IP 直连非常见端口、周期规律
+      回连(心跳)、大流量出站、监听无主高端口。无外联 ≠ 清白——可能是
+      休眠/定时型(采集时刻恰好在静默期),如实标「采集时刻无外联,需
+      结合触发时段观察」;有可疑外联则与驻留互证加权。父进程可疑链
+      (svchost/services 之外的父亲)一并看。
+  - key: execution_history
+    after: [location_anomaly]
+    host_scope: each
+    text: 它什么时候开始跑的、跑了多久、多久跑一次(首末次活跃)?
+    ask: >-
+      翻执行痕迹(Prefetch/Amcache/UserAssist/Shimcache;Linux 看
+      journal/auth_log/wtmp):首次出现时间与持久化项创建时间咬合吗?
+      长期潜伏(>6 个月)和刚落地(<24h)是两种案情,分开定性。
+  - key: tamper_signals
+    after: [location_anomaly]
+    host_scope: each
+    text: 有没有篡改与时间戳异常(1970/2080/FN 晚于 SI/无签名/包管理器查无此物)?
+    ask: >-
+      看篡改信号:1970/2080 时间戳(字段未知也会显 1970,强度降级标注)、
+      FN 晚于 SI、包管理器查无此物或校验失败、无签名/无包归属——每条
+      单独不强,叠加成链。查不到的维度如实说「该维度无数据」,不硬凑。
+  - key: legit_check
+    after: [residency_confirm, outbound_verify, execution_history, tamper_signals]
+    host_scope: each
+    text: 正品对账:正品在正确位置吗?是云代理/企业软件吗?包管理器登记在册吗?
+    ask: >-
+      下结论前排除三件事:①有没有正品在正确位置运行(如 svchost 里的真
+      DNS Client、/usr/sbin 里的真 cron);②是不是企业软件/云代理组件
+      (华为 HSS/阿里 aegis/腾讯 YunJing/深信服/青藤等);③包管理器登记
+      在册吗(rpm/dpkg/包校验)。排除不了才往恶意报,哈希/路径/驻留机制
+      证据列全交人定(判断权归人)。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的;本册发现链深度抵
+  # 引擎上限 5,复核节点挂在收官意图的父辈,与收官同层收口)
+  - key: independent_review
+    after: [residency_confirm, outbound_verify, execution_history, tamper_signals]
+    host_scope: each
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: timeline
+    after: [legit_check, independent_review]
+    host_scope: each
+    text: 时间线串链收官:落地 → 驻留 → 活跃;覆盖不全如实宣告?
+    ask: >-
+      串:首落时间 → 持久化注册 → 历次执行 → 当前状态 →(若有)外联
+      时段。谁在维持它的驻留?有没有关联的登录/外联/落地事件?排不出
+      的缺口如实说,别硬连;时间窗外的孤立可疑点单独拎出来。收官
+      对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默(本册发现链
+      深度抵引擎上限 5,覆盖宣告并入本步,不单独设闸)。

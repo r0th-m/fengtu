@@ -1,0 +1,13 @@
+# Linux 横向:隧道/转发工具进程命令行(通用工具名)
+id: linux-lateral-tunnel-tool-cmdline
+title: 隧道/转发工具(进程命令行)
+severity: medium
+target: any
+match:
+  source_eq: [ps_auxwwf]
+  command_contains: [autossh, frpc, frps, chisel, socat, "ssh -d "]
+note: >-
+  进程命令行中出现隧道/端口转发工具:autossh、frpc/frps(frp 内网穿透)、
+  chisel、socat、ssh -D 动态转发。横向移动与回连的通用通道;运维合法
+  使用很常见(跳板、内网调试),由人结合对端与方向判定。
+  (大小写不敏感匹配,ssh -d 命中注意复核参数原文。)

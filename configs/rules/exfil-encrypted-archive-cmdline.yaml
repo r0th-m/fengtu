@@ -1,0 +1,17 @@
+# 数据外泄:加密压缩包命令行(-p/-hp 加口令,防 DLP 的经典动作)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;签名值逐字保留。
+id: exfil-encrypted-archive-cmdline
+title: 加密压缩包命令行(PSHistory)
+severity: high
+target: any
+match:
+  command_contains:
+    - 7z a -p
+    - 7za a -p
+    - rar a -p
+    - rar a -hp
+    - winrar a -p
+note: >-
+  PowerShell 历史里出现带口令的压缩命令(7z a -p / rar a -p / rar a -hp
+  加密文件名单独高危)——给压缩包加口令绕内容审计是外泄的强信号,
+  high 级待审。

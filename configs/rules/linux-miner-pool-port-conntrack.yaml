@@ -1,0 +1,11 @@
+# Linux 挖矿:conntrack 里的矿池端口条目(ss 快照之外的第二视角)
+id: linux-miner-pool-port-conntrack
+title: conntrack 矿池常用端口条目
+severity: medium
+target: any
+match:
+  dport_eq: ["3333", "4444", "5555", "7777", "8333", "14444"]
+note: >-
+  内核连接跟踪(conntrack)中目的端口命中矿池 stratum 常用端口的
+  条目——ss 快照抓不到的短命连接在这里留痕。这些端口有合法用途
+  (5555 安卓 adb 等),由人结合对端地址与进程判定。

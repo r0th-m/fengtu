@@ -1,0 +1,25 @@
+# PowerShell 命令历史(PSHistory/ConsoleHost_history.txt)——
+# 0.25.0-datasource-unlock 新增,语义基准:树庭 backend/app/parsers/pshistory.py。
+#
+# 格式契约(PSReadLine 历史,对 spec 写):每行一条命令,UTF-8,
+# 无时间戳(ConsoleHost_history 本来就不记时间——快照型,ts 一律 nil
+# 如实,绝不伪造;采集时刻语义由包元信息提供)。
+#
+# command 与 cmdline 同值双写:command 是树庭附录 A 锚字段(迁移规则
+# command_contains 锚它),cmdline 是丰图 review 引擎主机统一面字段
+# (既有 cmdline 规则也能打到命令历史)。
+name: pshistory
+title: PowerShell 命令历史(PSReadLine ConsoleHost_history)
+kind: regex
+# 行式:去首尾空白取整行命令(空行由引擎恒 skip);嵌套分组同值双写。
+line_regex: '^\s*(?P<command>(?P<cmdline>\S(?:.*\S)?))\s*$'
+field_map:
+  command: command
+  cmdline: cmdline
+ts_optional: true
+encoding: utf-8
+log_type: command_history
+status: enable
+note: >-
+  PSReadLine 只记交互输入(脚本内命令不在);历史可被清除——命中锚定行号,
+  与 4688 进程创建事件互为印证(树庭 ransom-shadow-delete-pshistory 同款口径)。

@@ -1,0 +1,25 @@
+# 启发式知识库内置条目:Linux 外泄研判(0.22.0-treecourt-port)。
+id: linux-exfil-staging
+title: Linux 数据外泄:shm/tmp 是打包现场,快照型证据的边界要声明
+applies_to: [linux, exfil, host-triage]
+content: >-
+  【思路】与 Windows 外泄同理:先打包后传。Linux 的特殊性在
+  两个地方——可写目录(/dev/shm、/tmp、/var/tmp)是外泄的
+  staging 区(图省事与躲权限的通用动作,shm 里的压缩包尤其
+  可疑);证据多为快照型:ss/conntrack 是连接快照没有字节
+  计数,进程快照抓不到已退出的命令。「大流量」只能从连接
+  存续与进程身份推断,字节量说不清就如实说,建议补 PCAP/
+  NetFlow。
+  【怎么找】通道面:ss 公网外联 + conntrack 内核连接跟踪
+  对着看——conntrack 里有而 ss 已看不到的短命大连接(传完
+  就断)、SYN_SENT+UNREPLIED 出站(发出去没人理,C2 死了/
+  被墙的残影);文件传输协议端口(FTP/TFTP/rsync/FTPS)对
+  公网方向的连接。命令面:压缩打包(tar cz/zip -r/7z)、
+  上传通道(curl -T/--upload-file、scp/rsync 对公网、rclone
+  网盘通道)。现场面:可写目录快照里的压缩包、已删除仍被
+  持有的压缩包残影(传完即焚)。
+  【交叉印证】打包命令行 × 传输端口连接 × 可写目录压缩包,
+  互相对得上的是硬链;只有一边的如实标注证据单薄。
+  【注意】内网 rsync 备份、构建/部署产压缩包是常态,先说
+  排除理由;公司本来就用的备份/同步通道别当外泄报;非工作
+  时间(深夜/节假日)的集中打包外联是典型钟点旁证。

@@ -1,0 +1,16 @@
+# 突刺:单 IP 请求速率突刺(分桶基线 + z 闸;每 IP 只报 z 最高一桶)。
+# 需要 ts;无时区源如实不参与。
+id: web-ip-rate-spike
+title: 单 IP 速率突刺(分桶 z 检)
+family: web
+severity: medium
+applicable_to:
+  log_types: [web_access]
+params:
+  bucket_seconds: 60
+  min_buckets: 10
+  z_threshold: 5.0
+  min_bucket_count: 100
+implemented: true
+note: 单桶计数超基线 mean+z*std;弱信号,先排除业务高峰与 NAT 出口
+max_hits: 500

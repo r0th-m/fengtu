@@ -1,0 +1,14 @@
+# 横向移动:计划任务被创建(4698,远程 at/schtasks 落点候选)
+# 0.22.0-treecourt-port 自树庭 lateral-remote-task-created 迁移:
+# 树庭 target=eventlog_security → 丰图以 channel_eq+event_id_eq 表达同语义。
+id: lateral-remote-task-created
+title: 计划任务创建(4698)
+severity: medium
+target: any
+match:
+  channel_eq: [Security]
+  event_id_eq: ["4698"]
+note: >-
+  Security 通道 4698(计划任务已创建)——横向移动常用 at/schtasks
+  远程建任务落脚,合法运维也触发,medium 级待审;重点看创建者账户
+  与任务内容(对端来源/远程共享路径优先)。

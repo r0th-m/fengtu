@@ -1,0 +1,26 @@
+# 索图规则资产迁移(2026-09-25 对照表 §2.2,语义不变,签名内容未缩水;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜;scanner-ua 已同法迁移)
+# webshell:公开流传的 webshell 文件名(访问即嫌疑——正常站点不会有这些文件)
+id: webshell-filename
+title: 已知 webshell 文件名访问
+severity: high
+target: any
+match:
+  path:
+    - "c99.php"
+    - "r57.php"
+    - "shell.php"
+    - "shell.jsp"
+    - "shell.asp"
+    - "cmd.jsp"
+    - "cmd.php"
+    - "webshell"
+    - "wso.php"
+    - "b374k"
+    - "chopper"
+    - "mini.php"
+note: >-
+  c99/r57/WSO/b374k/中国菜刀(chopper)等是公开流传的 webshell 文件名,
+  出现在访问路径里即高度嫌疑(要么被植入,要么被探测)。文件名特征可能
+  与正常文件撞名(如 shell.php 被自研命名),故进待审区由人定夺。

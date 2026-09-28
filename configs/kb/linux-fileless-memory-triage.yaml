@@ -1,0 +1,22 @@
+# 启发式知识库内置条目:Linux 内存马/fileless 研判(0.32.0-linuxsc)。
+# 思路参照树庭 LINUXSC_SPEC §1.1 与 linux-triage 手册内存面。
+id: linux-fileless-memory-triage
+title: Linux 内存马/fileless:不落盘的才是要命的
+applies_to: [linux, host-triage, memory, rootkit]
+content: >-
+  【思路】fileless 攻击的共同点是不落盘:BPFDoor 自删除二进制、
+  memfd_create 匿名内存马、LD_PRELOAD 注入、匿名可执行内存段。
+  研判主线是「进程在跑什么、从哪来」:exe 软链 (deleted)、fd 指向
+  memfd、maps 里匿名 rwxp 段、cmdline/comm/exe 三方对不上,四个
+  视角任一命中都要追到进程本体。回收的样本(RecoveredBinaries)
+  拿 sha256 送查,是内存马的实锤路径。
+  【怎么找】看进程面四件套:proc_exe_deleted(自删除二进制)、
+  proc_fd_memfd(memfd 匿名文件)、proc_maps_suspicious_exec
+  (匿名可执行段,高噪,配合前两者交叉)、proc_identity(exe 落
+  /tmp//dev/shm//var/tmp 或 comm≠exe 基名=伪装)。environ 为空的
+  进程本身是 IOC(BPFDoor 清 environ)。
+  【交叉印证】内存马 × 网络面(无对应监听却有的外联=packet socket
+  嗅探,cBPF 后门 bpftool 看不到)× 持久化面(谁把它拉起来的:
+  cron/单元/shell 配置)。
+  【注意】/dev/shm 是合法 tmpfs,容器/runtime 也用它;单点命中
+  不定论,看多视角互证。

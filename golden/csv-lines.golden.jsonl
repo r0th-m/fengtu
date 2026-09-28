@@ -1,0 +1,6 @@
+{"line_no":1,"kind":"skip","ts_raw":null,"ts_utc":null,"norm":{},"raw":"","continuation_lines":0,"reason":"空行"}
+{"line_no":2,"kind":"skip","ts_raw":null,"ts_utc":null,"norm":{},"raw":"ts,user,op,note","continuation_lines":0,"reason":"CSV 表头(列序依据)"}
+{"line_no":3,"kind":"event","ts_raw":"2024-05-01 08:00:01","ts_utc":"2024-05-01T00:00:01Z","norm":{"actor":"alice","action":"login","extras":{"note":"from VPN"}},"raw":"2024-05-01 08:00:01,alice,login,\"from VPN\"","continuation_lines":0}
+{"line_no":4,"kind":"event","ts_raw":"2024-05-01 08:00:02","ts_utc":"2024-05-01T00:00:02Z","norm":{"actor":"bob","action":"export","extras":{"note":"plain"}},"raw":"2024-05-01 08:00:02,bob,export,plain","continuation_lines":0}
+{"line_no":5,"kind":"bad","ts_raw":null,"ts_utc":null,"norm":{},"raw":"2024-05-01 08:00:03,carol,delete","continuation_lines":0,"reason":"字段数 3 与表头 4 不一致(截断/多列)"}
+{"line_no":6,"kind":"bad","ts_raw":"2024-13-99 99:99:99","ts_utc":null,"norm":{},"raw":"2024-13-99 99:99:99,dave,login,x","continuation_lines":0,"reason":"时间解析失败(字段 'ts',ts_formats 全部不匹配)"}

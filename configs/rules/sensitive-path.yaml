@@ -1,0 +1,25 @@
+# 索图规则资产迁移(2026-09-25 对照表 §2.2,语义不变,签名内容未缩水;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜;scanner-ua 已同法迁移)
+# 敏感路径探测:版本库/环境文件/后台/备份
+id: sensitive-path
+title: 敏感路径探测特征
+severity: medium
+target: any
+match:
+  path:
+    - "/.git/"
+    - "/.env"
+    - "/.svn/"
+    - "/.hg/"
+    - "/wp-admin"
+    - "/wp-login"
+    - "/phpmyadmin"
+    - "/backup."
+    - "/config.php~"
+    - "/web.config"
+note: >-
+  /.git/、/.env、/.svn/ 泄露源码与密钥,wp-admin/phpmyadmin 是后台探测
+  高频目标,backup.*/config.php~ 是备份文件探测——均为公开攻击面知识
+  (OWASP/各类目录字典的头部成员)。正常站点也可能真用 wp-admin,
+  故 medium 进待审区,不自动定论。

@@ -1,0 +1,27 @@
+# 跨主机:同实体 ≥2 主机复现(§6.1 升格——跨机案核心算子)。归并键是
+# sources.host(一案多包主机建模);主机未建模的源不参与,账上如实记。
+# 0.21.0:实体类型走 params.entity_type(对齐树庭跨主机三规则,对照表 §3.1):
+#   ip(缺省,本配置):        公网 IP 跨机(C2 多机外联/共同被扫);私网/
+#                           回环/链路本地/组播结构性排除(协议结构不是案件值)
+#   account_sid:              同一 SID 跨机(共享账户多机使用候选;S-1-5-18/19/20
+#                           等熟知 SID 必然同值是结构性已知噪音,待审一眼排除);
+#                           取值字段 params.entity_fields 可配,缺省
+#                           [SubjectUserSid, TargetUserSid, MemberSid, user_sid, sid]
+#   file_sha256:              同一 sha256 跨机(同一样本多机落=已扩散,圈波及面);
+#                           缺省字段 [sha256, file_sha256, SHA256, hash_sha256]
+# 切类型=改 entity_type 一行(可按需另存注册文件,同 id 全域唯一)。
+id: cross-host-entity
+title: 公网实体跨主机复现(同 IP ≥N 主机)
+family: cross
+severity: high
+applicable_to:
+  log_types: [web_access, windows_event_log]
+params:
+  min_hosts: 2
+  entity_type: ip
+  ip_fields:
+    web_access: [src_ip]
+    windows_event_log: [IpAddress, SourceNetworkAddress]
+implemented: true
+note: 跨机复现=「有共同交集」的客观事实;方向(共同外联 vs 共同被连)要人读
+max_hits: 500

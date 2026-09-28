@@ -1,0 +1,131 @@
+# Linux 主机排查·意图链模板(0.22.0-treecourt-port;由树庭 linux-triage-v1
+# 手册蒸馏为意图树。依赖数据源:LinuxSC/Strata 采集包(ss/conntrack/
+# proc 身份比对/passwd/shadow/authorized_keys/sshd 配置+Ebury IOC/
+# systemd/cron/udev/pam/auth_log/journal/包校验/kmod/eBPF)——意图树是
+# 思路不依赖数据,数据源未接入时各意图如实宣告「数据未覆盖」)
+id: linux-triage
+version: 1
+title: Linux 主机排查(意图链模板)
+description: >-
+  Linux 应急主机排查:外联(ss+conntrack+监听面)→ 进程(伪装比对+
+  内存马链+空环境变量)→ 账户与登录凭证 → SSH 安全(配置弱点+Ebury
+  IOC+authorized_keys)→ 持久化(systemd/cron/udev/pam/profile.d)→
+  认证日志暴破模式 → 完整性(包校验/内核模块/eBPF)→ 时间线。
+  依赖 LinuxSC/Strata 数据源;数据缺失如实报「数据未覆盖」,不硬编。
+os: linux
+goal: >-
+  回答「这台 Linux 机器有没有事」:通道逐项排查,云代理/EDR 与
+  rootkit 行为同构的干扰先排除,结论只到「疑似候选」,判断权归人。
+intents:
+  - key: outbound
+    host_scope: each
+    text: 外联与监听面有没有不对劲(ss+conntrack 双账 + 开了几扇门)?
+    ask: >-
+      先看门外的脚印:ss 快照加 conntrack 两本账对着看——公网 IP 直连
+      非常见端口、莫名进程持有外联、conntrack 里有而 ss 已看不到的短
+      连接、SYN_SENT/UNREPLIED 大量堆积(扫描或回连不通的 C2)。再转
+      身看自己开了几扇门:telnet 任意端口是红旗;sshd 监听非 22 端口
+      要问清谁配的;没进通用服务端口集的高端口监听逐个说它该不该在;
+      「非标准监听口 × 公网来源」distinct 来源几十上百的端口是活跃
+      后门面。容器/集群的 service mesh、kubelet 健康检查、NTP/DNS
+      别凑数;每条怀疑给理由。
+  - key: processes
+    host_scope: each
+    text: 进程里有没有可疑者(身份三方比对/内存马链/空环境变量/隐藏进程)?
+    ask: >-
+      看屋里的人:cmdline/comm/exe 三方比对对不上(伪装)、exe 被删还在
+      跑、cmdline 为空却非内核线程;/dev/shm//tmp 里已删除仍被引用的
+      文件与 memfd 打开是内存马/无文件攻击典型链;ps 看不到但 /proc
+      里有的 pid(隐藏进程)、原始套接字(嗅探/BPFDoor 类候选)。用户态
+      可执行文件且环境变量为空才是强信号(BPFDoor 类清环境反取证),
+      嵌入式/定制系统空环境可能成片,别照单全收。**隐藏进程/库注入
+      先排除云监控代理**(华为 HSS/阿里 aegis/腾讯 YunJing/深信服/青藤
+      等 EDR——行为与 rootkit 同构,对照后再定)。正经服务别报,报了
+      就说出哪一项不对。
+  - key: accounts
+    host_scope: each
+    text: 账户与登录凭证有没有不对劲(UID 0 克隆/空密码/系统账户给 shell/陌生公钥)?
+    ask: >-
+      盘户口:UID 0 的 root 之外账户、密码字段为空(空密码直接登录)、
+      系统账户(nologin 位)被给了可登录 shell、意料之外的普通账户。
+      再看 authorized_keys:每个属主的公钥 comment/options 有没有不
+      认识的钥匙;passwd/shadow 改动时间与 lastlog 一并看。发行版
+      内建账户如实说明即可。
+  - key: ssh_security
+    after: [accounts]
+    host_scope: each
+    text: SSH 安不安全(配置弱点/Ebury IOC/authorized_keys 逐把审)?
+    ask: >-
+      SSH 是 Linux 的头号门:静态配置与生效值(sshd -T)对着看——
+      PermitRootLogin、PasswordAuthentication、PermitEmptyPasswords、
+      弱算法;静态与生效不一致说明被 drop-in 覆盖,揪出来。sshd 加载
+      的动态库里 is_ioc 命中是 Ebury 已知 IOC(libns2.so 等),resolved
+      指向奇怪路径也可疑;authorized_keys 逐把审:弱钥(RSA/DSA ≤1024)
+      直接高危、forced_command 要说出命令内容该不该在、占位符/不可
+      归因注释(root@HOSTNAME 类)结合属主与登录日志判断、文件本身
+      group/other 可写是结构异常。**sshd 库注入先排除 HSS 类登录监控
+      代理**(RHEL 系 sshd 本来就合法链接 libkeyutils)。
+  - key: persistence
+    host_scope: each
+    text: 持久化老窝(systemd/cron/udev/pam/profile.d/ld.so.preload)有没有可疑项?
+    ask: >-
+      Linux 的窝比 Windows 散:①systemd 单元 ExecStart 指向 /tmp、
+      /dev/shm、隐藏路径、非包提供的陌生服务名;②cron——curl/wget
+      拉脚本、base64、定时回连;③udev 规则带 RUN/PROGRAM 执行的;
+      ④pam_exec 钩子(登录即执行);⑤profile.d/bashrc 的 export 与
+      LD_PRELOAD;⑥xdg autostart、init 脚本、rc.local;⑦ld.so.preload
+      预载劫持。**代理/VPN/隧道类服务单独拎出来警示**:ss5、openvpn、
+      frp、nps、gost、chisel 类——服务器上非预期的隧道就是流量外发
+      通道,逐个说清谁部署的、对端去哪。系统自带单元别报。
+  - key: auth_logs
+    host_scope: each
+    text: 认证日志里有没有暴破模式(高频失败同源/失败后成功/异常成功)?
+    ask: >-
+      日志是别人敲门的录音:auth_log 与 journal sshd 两本账——action
+      计数(失败/非法用户/成功)、失败源 IP Top、成功登录全量。判:哪些
+      源 IP 是暴破、暴破有没有得手(同源失败后接 accepted)、成功登录
+      里有没有异常源/异常账户/非工作时间的;still logged in 会话与
+      last 来源 Top 一并看。互联网面被扫是常态,单纯失败量大定中档,
+      「失败后有成功」或成功来源说不清的才往高定。
+  - key: integrity
+    host_scope: each
+    text: 家底有没有被换(包校验/隐藏内核模块/内核 taint/eBPF 钩子)?
+    ask: >-
+      翻家底:①包管理器校验(rpm -Va/dpkg -V)改动行——二进制和库被改
+      是大事,配置文件被改看内容定级;②/sys/module 与 lsmod 差集,
+      单向存在的模块是隐藏 LKM rootkit 经典特征;③kernel taint 非零;
+      ④陌生 eBPF 程序/网络钩子(tracing/kprobe/xdp/tc)。容器宿主与
+      k8s 节点自带 eBPF 不少,报之前想清楚它该不该在。**配置改动先
+      核对是否云代理或基线加固所致**;云端主机提醒分析师:代理告警
+      本体在云端控制台,应请客户导出云端告警补证。
+  - key: timeline
+    after: [outbound, processes, ssh_security, persistence, auth_logs, integrity]
+    host_scope: each
+    text: 时间线串链:登录 → 落地/改配置 → 提权 → 持久化 → 外联?
+    ask: >-
+      把前面的账并起来:按前序发现的时间提示拉时间窗内事件,IOC 反查
+      一并看。串:登录(暴破/成功)→ 落地/改配置 → 提权 → 持久化 →
+      外联,能不能排成一条链?排不出的缺口如实说,别硬连;时间窗外的
+      孤立可疑点单独拎出来。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的)
+  - key: independent_review
+    after: [timeline]
+    host_scope: all
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: coverage_gate
+    after: [timeline, independent_review]
+    host_scope: all
+    text: 覆盖闸收官:哪些品类查过、哪些没查过,还有没有未核实的疑点?
+    ask: >-
+      收官宣告:对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默;
+      未核实疑点列成清单交给人。覆盖不全如实标,不硬编结论。

@@ -1,0 +1,19 @@
+# 启发式知识库内置条目(0.25.0-datasource-unlock):PSHistory 命令历史
+# 命中研判(随 PSHistory 事件化与 7 条 command 签名规则落地)。
+id: command-history-snapshot-triage
+title: PSHistory 命令历史命中:快照型证据怎么读
+applies_to: [windows, exfil, lateral-movement, ransomware, miner, host-triage]
+content: >-
+  【命中意味着什么】ConsoleHost_history.txt 是 PSReadLine 的交互式命令
+  历史——用户在 PowerShell 窗口里亲手敲过的命令。命中打包/上传/侦察/
+  删影/矿池地址命令,说明「有人在这台机器的交互会话里执行过这个动作」,
+  是攻击者手操(而非纯自动化载荷)的强指向。
+  【怎么解读】三条诚实边界:①快照型证据无时间戳(PSReadLine 本来就不
+  记时间),命中只能锚定「主机+源文件+行号」,时间窗要拿 4688 进程创建
+  事件、Prefetch、EFU 文件时间去补;②历史可被清除/按用户分文件——
+  没有命中≠没有执行,命中行号靠前靠后也不代表时间先后;③只记交互
+  输入,脚本内嵌命令(ps1 文件里的)不进历史,脚本内容要另查。
+  【下一步往哪挖】①同一命令族成簇出现才升级(单条 net view 是运维
+  日常);②与 ransom-shadow-delete-cmdline(4688 面)互证:两个面都
+  命中,时间窗和账户直接对齐;③命令里的目标路径/地址拎出来当新线索:
+  路径查 MFT/EFU 是否存在,地址查 netstat/SRUM 是否真连过。

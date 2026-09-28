@@ -1,0 +1,112 @@
+# Linux 横向移动排查·意图链模板(0.22.0-treecourt-port;由树庭
+# linux-lateral-v1 手册蒸馏为意图树。依赖数据源:LinuxSC/Strata 采集包
+# (auth_log/journal/ss/进程快照/sshd 配置/authorized_keys/systemd/cron)
+# ——意图树是思路不依赖数据,数据源未接入时各意图如实宣告「数据未覆盖」)
+id: linux-lateral
+version: 1
+title: Linux 横向移动排查(意图链模板)
+description: >-
+  Linux 横向移动排查:sshd 成功登录源与暴破得手模式,内网互连(横向
+  关注端口出入向+监听分组),root 远程登录配置与记录对账,
+  authorized_keys 陌生公钥,SSH 隧道与转发工具(配置 AllowTcpForwarding
+  + 命令行 -D/-L/-R/frp/chisel),横向落点持久化,时间线串链。
+  依赖 LinuxSC/Strata 数据源;数据缺失如实报「数据未覆盖」,不硬编。
+os: linux
+goal: >-
+  还原 Linux 横向路径:每一跳的来源与目标、钥匙是谁留的、隧道通向
+  哪里;缺证据的跳如实标注待补采,判断权归人。
+intents:
+  - key: accepted_logons
+    host_scope: each
+    text: sshd 成功登录里有没有暴破得手/异常来源(谁进来了)?
+    ask: >-
+      横向进门先看谁进来了:auth_log 与 journal sshd 的聚合都在——
+      action 计数、失败源 IP Top、成功登录全量。盯:①同一源 IP「大量
+      失败后面跟 accepted」=暴破得手,最高优先;②成功登录的源是内网
+      其他主机(谁在往我这跳)还是说不清的公网地址;③登录账户与机器
+      身份不符;④still logged in 会话与 last 来源 Top 里没见过的新
+      来源。互联网面被扫是常态,单纯失败量大不算得手;每条给账户+
+      来源+时间。
+  - key: lan_interconnect
+    host_scope: each
+    text: 内网互连里谁在连谁(横向关注端口出入向+监听分组)?
+    ask: >-
+      看谁在连谁:内网互连分三组——本机主动连内网别机关注端口(22/23/
+      445/3389/5985/6379/8080/873 等,我是跳板嫌疑)、内网对端连进本机
+      这些端口的已建立连接(谁连我)、本机暴露在非回环地址上的关注端口
+      (门开着几扇)。盯:数据库/缓存端口(6379/8080)直连、登录源 IP 与
+      入向对端对不对得上、多台内网机器间的链式互连。运维互访、集群
+      心跳、监控探测是常态,别见内网连接就报,说得出理由才算。
+  - key: root_remote
+    after: [accepted_logons]
+    host_scope: each
+    text: root 远程登录:配置允许值 × 成功登录记录对不对得上?
+    ask: >-
+      root 远程登录是最狠的一条门:先弄清 sshd 双份配置(静态值 +
+      sshd -T 生效值)里 PermitRootLogin 的实际生效值——yes 或
+      prohibit-password 都意味着 root 能从网络进来;静态与生效不一致
+      说明被 drop-in 覆盖,揪出来。再拿成功登录全量对账:root 的
+      accepted 有几条、从哪来、什么时间。配置禁止而记录里有 root 远程
+      成功,或配置允许且来源说不清,都是大事,按实际定级。
+  - key: authorized_keys
+    after: [accepted_logons]
+    host_scope: each
+    text: authorized_keys 里有没有横向留的钥匙(逐把审属主)?
+    ask: >-
+      横向过来常留钥匙:逐把看各账户 authorized_keys——comment 里能不能
+      认出属主(谁的工作站/哪台运维机)、options 里有没有 command= 强制
+      命令或 from= 来源限制(裸钥匙风险最高)、root 的 authorized_keys
+      有没有不该有的钥匙。结合 passwd/shadow 改动时间看账户面几时被动
+      过,和可疑登录时间咬不咬合。认不出属主的钥匙逐把列出标「待人工
+      核属主」,别猜是谁的。
+  - key: ssh_tunnel
+    host_scope: each
+    text: 有没有 SSH 隧道与转发(配置 × 进程命令行两头看)?
+    ask: >-
+      隧道是横向的高速公路:①配置侧——sshd_config 的 AllowTcpForwarding、
+      PermitTunnel、GatewayPorts 放开没有(默认值与生效值对不上要揪);
+      ②进程侧——ssh -D/-L/-R、autossh、frpc/frps、chisel、socat 命中。
+      盯:还活着的隧道进程、对端是谁、转发方向和内网互连对不对得上。
+      大小写不敏感预筛会把 ssh -l 登录名参数误伤进来,复核时剔掉;
+      运维跳板合法用隧道很常见,结合来源与业务说理由。
+  - key: landing_persistence
+    after: [accepted_logons]
+    host_scope: each
+    text: 横向落点持久化(登录后立刻出现的单元/cron/钩子)?
+    ask: >-
+      横向进来要落脚:systemd 新单元、cron 新条目、rc.local、profile.d、
+      pam_exec 钩子,创建时间与可疑登录时间咬不咬合。盯:登录后立刻
+      出现的持久化项、指向可写目录的 ExecStart、curl/wget 拉脚本的
+      cron。和钥匙放一起看——钥匙+单元双保险是常见组合。系统自带与
+      包安装的单元别报,报出的说清它凭什么常驻。
+  - key: timeline
+    after: [root_remote, authorized_keys, ssh_tunnel, landing_persistence, lan_interconnect]
+    host_scope: all
+    text: 横向移动时间线串链:「来源主机登录 → 落点 → 内网互连外跳 → 隧道回连」?
+    ask: >-
+      并账:按前序时间提示拉时间窗内事件,IOC 反查也在。串一条「来源
+      主机登录(暴破/钥匙)→ 落点(钥匙/单元/cron)→ 内网互连外跳 →
+      隧道回连」的横向链,标出每一跳的来源和目标、第一跳的时间。哪一
+      跳缺证据如实标注待补采(如目标机的日志不在这里),别硬连。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的)
+  - key: independent_review
+    after: [timeline]
+    host_scope: all
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: coverage_gate
+    after: [timeline, independent_review]
+    host_scope: all
+    text: 覆盖闸收官:哪些品类查过、哪些没查过,还有没有未核实的疑点?
+    ask: >-
+      收官宣告:对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默;
+      未核实疑点列成清单交给人。覆盖不全如实标,不硬编结论。

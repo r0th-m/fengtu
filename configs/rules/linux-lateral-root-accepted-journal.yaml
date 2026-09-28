@@ -1,0 +1,14 @@
+# Linux 横向:root 远程 SSH 登录成功(journal/系统日志面,双视角互证)
+id: linux-lateral-root-accepted-journal
+title: root 远程登录成功(journal/系统日志)
+severity: high
+target: any
+match:
+  unit_eq: [sshd, sshd-session]
+  action_eq: [accepted]
+  user_eq: [root]
+  src_ip_contains: ["."]
+note: >-
+  journal sshd 单元与 messages/syslog 中 root 账户登录成功且带来源 IP。
+  与 auth_log 版双视角互证(有的发行版只留其中一路);同源「先大量失败
+  后成功」即暴破得手。(unit 含 sshd-session:OpenSSH 9.8+ 改名,格式契约变体。)

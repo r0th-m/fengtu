@@ -1,0 +1,18 @@
+# 数据外泄:命令行创建压缩包(PSHistory「收集 → 打包」动作)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移(PSHistory 事件化落地);
+# 签名值逐字保留(command_contains 子串清单零缩水)。
+id: exfil-archive-create-cmdline
+title: 命令行创建压缩包(PSHistory)
+severity: medium
+target: any
+match:
+  command_contains:
+    - 7z a
+    - 7za a
+    - rar a
+    - winrar a
+    - bandizip c
+note: >-
+  PowerShell 历史里出现命令行打包命令(7z a / rar a / winrar a /
+  bandizip c)——脚本化批量打包是外泄「收集 → 打包」段的通用动作,
+  medium 级待审;运维打包日志备份也会出现,由人看目标目录与后续外联。

@@ -1,0 +1,22 @@
+# 启发式知识库内置条目(0.21.0-operator-port):SQL 注入签名命中研判。
+# 覆盖规则 sqli-time-based / sqli-union-select(对照表 §2.2 研判思路列沉淀)。
+id: web-sqli-signatures
+title: SQL 注入签名命中:怎么解读、往哪挖
+applies_to: [web, sqli]
+content: >-
+  【命中意味着什么】sqli-time-based 命中(sleep(/benchmark(/waitfor delay/
+  pg_sleep)说明查询串里出现了数据库延时函数——正常业务几乎无合法形态,
+  是盲注探测的直接信号,误报面小;sqli-union-select 命中(union select
+  及其编码变体/or 1=1/information_schema)是联合查询拖数据与恒真条件的
+  公开标志。两条都只做大小写不敏感子串匹配,UA/参数可伪造,命中=探测
+  发生,≠注入成功。
+  【怎么解读】先看响应侧:命中行的 status 与 bytes——盲注探测期常见
+  200 但长度分化(真/假条件返回体不同),union 拖数据成功常伴异常大
+  响应。再看密度:同 src_ip 是否成串命中多条 sqli 规则、是否扫多个
+  参数位——单发多为扫描器过境,成串且参数迭代才是手工/半手工利用。
+  【下一步往哪挖】①按 src_ip 聚合该命中前后窗口的全部请求,还原
+  探测序列(先踩点路径、后注参数);②用尺寸离群(web-outlier)看同
+  path 响应长度是否有少数派——盲注真假条件的指纹;③若存在应用/
+  数据库日志,按时间窗对齐查慢查询/报错;④确认该参数位对应的后端
+  是否真拼 SQL(代码或接口 owner 一句话能定性大半);⑤疑似成功的,
+  转入侵链排查:webshell 文件名、命令执行参数、新写文件时间簇。

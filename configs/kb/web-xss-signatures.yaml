@@ -1,0 +1,23 @@
+# 启发式知识库内置条目(0.21.0-operator-port):XSS 签名命中研判。
+# 覆盖规则 xss-javascript-protocol / xss-script-handler(对照表 §2.2)。
+id: web-xss-signatures
+title: XSS 签名命中:怎么解读、往哪挖
+applies_to: [web, xss]
+content: >-
+  【命中意味着什么】xss-javascript-protocol 命中(javascript: 及其编码
+  %3a)说明伪协议字面量进了查询串——常见于重定向/跳转参数投毒,正常
+  业务几乎不会把该协议放进参数值;xss-script-handler 命中(<script
+  含 %3c 编码、onerror=/onload= 等事件处理器、alert()是反射型 XSS
+  载荷骨架。引擎只做子串匹配、不做 on\w+= 正则(保持确定性),事件
+  处理器枚举以公开清单高频项为准,覆盖度有限如实标注——没命中≠没有。
+  【怎么解读】反射型 XSS 的攻击对象是普通用户而非服务器本身,所以
+  研判重点不在「服务器是否被拿下」,而在「这条链接能不能钓人」:
+  看命中参数是否为跳转/回调类(url=/redirect=/next=/callback=),
+  看同 src_ip 是否在批量试参数组合(探测期),还是单条精心构造
+  (投递期,常伴 referer 为站外/空)。
+  【下一步往哪挖】①按参数名聚合,确认该参数在页面里是否被反射
+  (响应体里找不找得到载荷原文,bytes 明显变大是旁证);②批量探测的
+  按 src_ip 还原字典与节奏,定性工具还是手工;③疑似投递的,把完整
+  URL 交给业务方评估点击面,并查同 path 是否有 CSP/X-XSS-Protection
+  等响应头缺失的系统性问题;④与存储型面联动:若应用有留言/资料
+  类写入接口,查写接口的同类载荷(那才是真正能持久伤人的一条)。

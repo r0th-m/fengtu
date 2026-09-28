@@ -1,0 +1,12 @@
+# Linux 外泄:scp/rsync 远程拷贝命令行(方向存疑,low 级)
+id: linux-exfil-copy-cmdline
+title: scp/rsync 远程拷贝(进程命令行)
+severity: low
+target: any
+match:
+  source_eq: [ps_auxwwf]
+  command_contains: ["scp ", "rsync "]
+note: >-
+  进程命令行中出现 scp/rsync 远程拷贝。运维批量分发与备份极其常见,
+  单看命令行分不清方向与意图——价值在与外联连接、压缩痕迹、非工作
+  时间活动时间线互证。

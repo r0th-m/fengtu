@@ -1,0 +1,18 @@
+# Linux:SSHD 登录成功(journal/系统日志面,与 auth_log 双视角)
+# journal parser 与 syslog parser 都产 unit(=tag)字段,本规则因此同时
+# 覆盖 journalctl 导出与 messages/syslog/cron 里的 sshd 行——树庭
+# linux_syslog_file 也挂 journal_event 面,语义一致。
+id: linux-sshd-accepted-journal
+title: SSH 登录成功(journal/系统日志,暴破背景复核)
+severity: high
+target: any
+match:
+  unit_eq: [sshd, sshd-session]
+  action_eq: [accepted]
+  src_ip_contains: ["."]
+note: >-
+  journal sshd 单元与 messages/syslog 中 sshd 的登录成功(action=accepted)
+  且带来源 IP 的事件。与 auth_log 规则同义、数据源不同(journal 与
+  rsyslog 覆盖时段常有差,两本账都看)。结合失败源 IP 复核暴破是否得手;
+  合法运维登录由人驳回。(unit 取值含 sshd-session:OpenSSH 9.8+ 把
+  会话进程改名为 sshd-session,属格式契约变体,非案件值。)

@@ -1,0 +1,15 @@
+# 横向移动:新服务安装(7045,远程落点候选;合法部署也触发,medium)
+# 0.22.0-treecourt-port 自树庭 lateral-service-installed 迁移:
+# 树庭 target=eventlog_system → 丰图以 channel_eq+event_id_eq 表达同语义
+# (channel=System 的 7045);签名零缩水。
+id: lateral-service-installed
+title: 新服务安装(7045)
+severity: medium
+target: any
+match:
+  channel_eq: [System]
+  event_id_eq: ["7045"]
+note: >-
+  System 通道 7045(新服务已安装)——横向移动远程落点(psexec 类)与
+  合法软件部署都会触发,medium 级待审;重点看映像路径与创建账户,
+  配合 lateral-service-writable-dir(可写目录,high)分级。

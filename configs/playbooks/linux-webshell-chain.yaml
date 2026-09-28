@@ -1,0 +1,115 @@
+# Linux webshell 三级链排查·意图链模板(0.22.0-treecourt-port;由树庭
+# linux-webshell-chain-v1 手册蒸馏为意图树——三级链:Web 入口 →
+# webshell 驻留 Web 服务进程 → 可写目录改名 shell 波次 → 工具/C2。
+# 依赖数据源:LinuxSC/Strata 采集包 + Web 访问日志;意图树是思路不
+# 依赖数据,数据源未接入时各意图如实宣告「数据未覆盖」)
+#
+# 核心心法(实案沉淀,通用化):日志缺口本身是证据;快照差分(两次
+# 采集 diff 新增物=落地事件);同秒双源互证;文件名会撒谎,命令行
+# 参数才是真身;二进制永不执行,哈希+strings 静态识别。
+id: linux-webshell-chain
+version: 1
+title: Linux webshell 三级链排查(意图链模板)
+description: >-
+  Linux webshell 实战排查:先审日志窗口完整性,再从规则命中/IOC 定
+  Web 入口,顺 Web 服务进程的派生链找可写目录随机名 shell,清点可写
+  目录落地物(同尺寸家族/隐藏文件/波次时间),命令行给工具定性
+  (扫描/隧道/压缩),systemd/cron 找伪装驻留与 C2 心跳外联,时间线+
+  互证收尾。依赖 LinuxSC/Strata 数据源;数据缺失如实报「数据未覆盖」,
+  不硬编。
+os: linux
+goal: >-
+  还原 webshell 三级链:入口 → 驻留 → 波次操作 → C2;每个结论锚到
+  文件+行号,串不起来的环节如实留洞,别把推测写成事实。
+intents:
+  - key: log_window
+    host_scope: each
+    text: 日志窗口完整吗(先于内容:首尾时间/中间断档)?
+    ask: >-
+      先别急着看内容,先量窗口:auth/secure 这类日志的首尾时间各是
+      什么时候?中间有没有断档?缺口不是「没数据」——缺口本身就是
+      攻击者可能擦过日志的证据。有断档就把断档区间单独报出来,后面
+      所有结论都标注「该区间无日志覆盖」。
+  - key: web_entry
+    host_scope: each
+    text: Web 入口在哪(规则命中/已知利用面;200 成功与 500 失败分开报)?
+    ask: >-
+      入口多半在 Web 层:看待审命中里有没有 SQLi/webshell 文件名/敏感
+      路径命中;有应用 access 日志的重点搜框架已知利用面——未授权的
+      数据库管理/调试接口是高频突破口;同一个利用动作,200 成功与
+      500 失败如实分开报(失败是尝试,成功才是失陷)。注意归因:日志
+      首列 IP 若是 WAF/云防线回源节点(同 IP 服务大量不同 XFF),真实
+      源在 XFF 字段,别把中间人当攻击者。
+  - key: spawn_chain
+    after: [web_entry]
+    host_scope: each
+    text: Web 服务进程派生了什么(java/nginx/php → 可写目录随机名 shell)?
+    ask: >-
+      webshell 干活一定要派生进程:盯 java/tomcat、nginx、php-fpm 这类
+      Web 服务进程派生的子进程——/tmp、/dev/shm、/var/tmp 下的随机名
+      可执行文件是头号嫌疑(常见手法是投放改名 bash 规避 /bin/bash
+      审计)。配合身份比对:cmdline/comm/exe 对不上、exe 已删还在跑、
+      环境变量为空(exe 存在的前提)都是强信号。系统服务正常派生
+      (sh、systemd 子进程)说清楚排除理由。
+  - key: writable_drops
+    after: [spawn_chain]
+    host_scope: each
+    text: 可写目录落地物清点(同尺寸同哈希家族/随机名/隐藏文件/已删除仍打开)?
+    ask: >-
+      这是 webshell 的施工现场,按四个特征清点 /tmp、/dev/shm、/var/tmp
+      快照:①同尺寸同哈希家族(同一文件反复改名投放,尺寸/哈希一归并,
+      mtime 聚簇就是攻击者的操作波次);②随机名/无意义名;③隐藏文件
+      (.systemd 类伪装系统服务的点号文件);④已删除仍打开的。定性分
+      两档:干净工具被恶意使用(如 bash 本体)与恶意本体(C2/扫描器),
+      别混为一谈;二进制建议哈希+strings 静态识别,永不执行。
+  - key: tool_identify
+    after: [writable_drops]
+    host_scope: each
+    text: 工具定性:命令行指纹是扫描/隧道/传输哪一类?
+    ask: >-
+      工具落地必留命令行指纹:找扫描(fscan/nmap 的 -h -p 参数、网段
+      字面量)、隧道(frp/nps/rathole 的配置与端口)、压缩传输(tar/zip
+      +curl/wget 外发)。注意伪装:工具改名成正经软件名、藏进形似厂商
+      目录冒充合法进程是常见手法——文件名会撒谎,命令行参数才是真身。
+      bash_history 只在交互式登录时有用——webshell 非交互执行不写
+      history,查不到不等于没跑过,这点如实说。
+  - key: persist_c2
+    after: [writable_drops]
+    host_scope: each
+    text: 伪装驻留与 C2 心跳(webshell 是消耗品,C2 才是常驻资产)?
+    ask: >-
+      找常驻资产:systemd unit/cron/profile.d 里伪装系统服务的名字
+      (.systemd、kworker 仿冒类);外联里找心跳特征——固定间隔±抖动
+      的周期性短连接、陌生域名/IP 的长连接。实战 C2 常带心跳抖动和
+      URI 伪装(仿静态资源/接口路径),二进制里未必有硬编码地址,
+      外联审计比 strings 更可靠。安全软件 runlog 有告警时间戳的,
+      拿来对时。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的;本册发现链深度抵
+  # 引擎上限 5,复核节点挂在收官意图的父辈,与收官同层收口)
+  - key: independent_review
+    after: [writable_drops, log_window]
+    host_scope: each
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: corroborate
+    after: [tool_identify, persist_c2, log_window, independent_review]
+    host_scope: each
+    text: 互证、快照差分与时间线收官(三道闸 + 覆盖宣告)?
+    ask: >-
+      收尾三道闸:①同秒互证——关键事件尽量找第二源(Web 双侧日志
+      同秒、agent 告警时间戳对文件 mtime),单源结论标注证据单薄;
+      ②快照差分——有两次以上采集的,diff 同一目录清单,新增物=两次
+      快照间的落地事件;③时间线排轴,波次时间、登录成功、扫描动作
+      按序串链,每个结论锚到文件+行号。串不起来的环节如实留洞,
+      别把推测写成事实。收官对照源覆盖逐项宣告「查过/未覆盖/数据
+      缺失」,零沉默(本册发现链深度抵引擎上限 5,覆盖宣告并入本步,
+      不单独设闸)。

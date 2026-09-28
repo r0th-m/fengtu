@@ -1,0 +1,15 @@
+# Linux 横向:root 远程 SSH 登录成功(auth_log 面)
+id: linux-lateral-root-accepted-authlog
+title: root 远程登录成功(auth_log)
+severity: high
+target: any
+match:
+  source_eq: [auth_log]
+  action_eq: [accepted]
+  user_eq: [root]
+  src_ip_contains: ["."]
+note: >-
+  auth_log 中 root 账户 sshd 登录成功且带来源 IP。root 远程直入是横向
+  移动与暴破得手里最重的一条——每条都该能说清是谁、从哪来、该不该在;
+  与失败源 IP Top 对照,同源「先大量失败后成功」即暴破得手。先核堡垒机/
+  运维白名单。

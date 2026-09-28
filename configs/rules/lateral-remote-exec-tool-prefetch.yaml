@@ -1,0 +1,21 @@
+# 横向移动:远程执行工具痕迹(Prefetch;psexec 系通用工具名)
+# 0.22.0-treecourt-port 自树庭 lateral-remote-exec-tool-prefetch 迁移:
+# 锚 prefetch_exec.exe_name(丰图同名字段);签名值零缩水;
+# _eq 精确等值——at.exe 不会误伤 acat.exe 类超串。
+id: lateral-remote-exec-tool-prefetch
+title: 远程执行工具痕迹(Prefetch)
+severity: medium
+target: any
+match:
+  exe_name_eq:
+    - PSEXEC.EXE
+    - PSEXESVC.EXE
+    - PAEXEC.EXE
+    - CSEXEC.EXE
+    - WINRS.EXE
+    - AT.EXE
+note: >-
+  Prefetch 显示远程执行/横向工具运行过:psexec/psexesvc(psexec 服务
+  端,出现在被控机!)、paexec、csexec、winrs、at。psexesvc 在本机出现
+  尤其值得注意——说明本机被 psexec 远程执行过。管理员工具同样触发,
+  medium 级待审。

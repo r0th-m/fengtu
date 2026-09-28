@@ -1,0 +1,23 @@
+# 尺寸离群:同复合键响应字节偏离中位数 N 倍(0.21.0 对齐索图
+# size_outlier,对照表高档;源 stats/path-size-outlier.yaml)。
+# 复合键 path+method+status:同路径+同方法+同状态码才可比(防动态页误报);
+# 真中位数基准(偶数样本取两中值均值,对齐 DuckDB MEDIAN);中位数为零的
+# 组不判比率(如实跳过);严格双向偏离(>中位数×ratio 或 <中位数÷ratio);
+# 每组按 |值-中位数| 降序最多拎 max_outliers 条少数派,detail 直给
+# 中位数/样本数/比率/方向(偏大/偏小)。
+# 旧配置兼容:params 写单 key_field(如 key_field: path)照常工作。
+id: web-outlier
+title: 尺寸离群(同键字节偏离中位数)
+family: web
+severity: low
+applicable_to:
+  log_types: [web_access]
+params:
+  key_fields: [path, method, status]
+  bytes_field: bytes
+  ratio: 3.0
+  min_samples: 20
+  max_outliers: 3
+implemented: true
+note: 大文件接口/下载页天然离群,先确认 path 语义;detail 直给中位数与比率
+max_hits: 500

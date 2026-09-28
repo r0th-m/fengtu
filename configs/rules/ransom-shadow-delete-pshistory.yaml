@@ -1,0 +1,17 @@
+# 勒索前置:PSHistory 删影/破坏备份命令(4688 之外的第二只眼)
+# 0.25.0-datasource-unlock 自树庭同名规则迁移;签名值逐字保留。
+id: ransom-shadow-delete-pshistory
+title: 删影/破坏备份命令(PSHistory)
+severity: high
+target: any
+match:
+  command_contains:
+    - delete shadows
+    - shadowcopy delete
+    - delete catalog
+    - recoveryenabled no
+note: >-
+  PowerShell 历史里出现删影/破坏备份/关启动恢复命令:vssadmin delete
+  shadows、shadowcopy delete、wbadmin delete catalog、bcdedit
+  recoveryenabled no。ConsoleHost_history 无时间戳(快照型),命中锚定
+  行号;与 4688 规则(ransom-shadow-delete-cmdline)互为印证。

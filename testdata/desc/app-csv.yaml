@@ -1,0 +1,15 @@
+name: app-csv
+title: 应用 CSV 日志(合成样例)
+kind: csv
+csv:
+  delimiter: ','
+  header: true
+field_map:
+  ts: ts_raw
+  user: actor
+  op: action
+ts_field: ts
+ts_formats:
+- '%Y-%m-%d %H:%M:%S'
+status: draft
+note: 合成样例(非真实样本),覆盖 kind=csv 的 golden 对照

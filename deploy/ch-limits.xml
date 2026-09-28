@@ -1,0 +1,11 @@
+<!-- ClickHouse server 级内存保险丝(M5):compose 挂载到 users.d,对 default
+     profile 生效。8GB 是按 16GB 机型给的参考值(约一半留给 CH,另一半给
+     PG/丰图进程/系统);与应用层会话级 max_memory_usage=4GB 保险丝
+     (DESIGN §4.2)叠加不冲突。换机型按内存一半口径自行调整。 -->
+<clickhouse>
+  <profiles>
+    <default>
+      <max_memory_usage>8000000000</max_memory_usage>
+    </default>
+  </profiles>
+</clickhouse>

@@ -1,0 +1,12 @@
+# Linux 挖矿:进程 exe 落在可写目录(伪装比对面)
+id: linux-miner-proc-exe-writable
+title: 进程 exe 落在可写目录
+severity: high
+target: any
+match:
+  source_eq: [proc_cmdline_comm_exe_compare]
+  exe_contains: ["/tmp/", "/dev/shm", "/var/tmp/"]
+note: >-
+  proc_identity(cmdline/comm/exe 三方比对)中 exe 指向 /tmp/、/dev/shm、
+  /var/tmp/ 可写目录——合法服务几乎不从可写目录运行,是矿工/恶意软件
+  落地的通用特征。与 comm/exe 伪装比对联动复核更佳。

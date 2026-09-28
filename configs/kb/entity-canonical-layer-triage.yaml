@@ -1,0 +1,23 @@
+# 启发式知识库内置条目(0.25.0-datasource-unlock):实体层命中研判
+# (随 entities 表与 target=entity 签名规则落地,含 xhost 跨机三规则)。
+id: entity-canonical-layer-triage
+title: 实体层命中:canonical_key 归一与跨机聚合怎么读
+applies_to: [cross-host, spread-scope, windows, host-triage]
+content: >-
+  【命中意味着什么】实体层把事件里的 IP/域名/账户/文件哈希归一成
+  canonical_key(IP 去端口、域名小写去尾点、账户小写、哈希小写)落
+  entities 表,签名规则直接对实体匹配:单机实体规则(域名命中网盘/
+  矿池特征)是「这台机碰过这类服务」的标注;跨机规则(min_hosts≥2)
+  是「同一全局身份出现在多台主机」的聚合。
+  【怎么解读】①qualifier 是硬闸:只有 global(公网 IP、域名、SID 账户、
+  文件哈希)参与跨机聚合,私网 IP 与无名账户天然 host_scoped——
+  「每台机器都有同段私网地址」的假联动从结构上被排除,跨机命里没有
+  私网噪声;②锚点是首见:实体行记的是该实体在此案此主机第一次被
+  抽到的源+行号,后续复现不滚动覆盖,要全部出现位置按 canonical_key
+  回查事件;③域名实体命中只说明名字特征吻合(pool./pan.baidu 这类
+  子串),合法服务同名情况由人核。
+  【下一步往哪挖】①跨机命中先把 hosts 清单当波及面:逐机回溯首落
+  时间与落地路径,首落机是入侵链起点候选;②SID 命中先排除熟知
+  SID(S-1-5-18/19/20 必然同值,是结构性噪音);③实体抽取依赖解析器
+  产出的字段面——当前覆盖 netstat 地址/事件日志 IP 与 SID/账户名/
+  sha256 字段,某类源没产字段 = 该类实体缺席,读结论时按覆盖面打折。

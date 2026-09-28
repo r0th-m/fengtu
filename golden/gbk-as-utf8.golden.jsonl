@@ -1,0 +1,3 @@
+{"line_no":1,"kind":"event","ts_raw":"2024-05-01 08:00:01","ts_utc":"2024-05-01T00:00:01Z","norm":{"level":"INFO","message":"�����������"},"raw":"2024-05-01 08:00:01 INFO �����������","continuation_lines":0}
+{"line_no":2,"kind":"event","ts_raw":"2024-05-01 08:00:02","ts_utc":"2024-05-01T00:00:02Z","norm":{"level":"WARN","message":"���̿ռ䲻��"},"raw":"2024-05-01 08:00:02 WARN ���̿ռ䲻��","continuation_lines":0}
+{"line_no":3,"kind":"bad","ts_raw":"2024-13-01 99:99:99","ts_utc":null,"norm":{},"raw":"2024-13-01 99:99:99 ERROR ʱ�����ʧ������","continuation_lines":0,"reason":"时间解析失败(字段 'ts',ts_formats 全部不匹配)"}

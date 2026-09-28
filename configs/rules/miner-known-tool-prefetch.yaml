@@ -1,0 +1,25 @@
+# 挖矿:知名开源矿工执行痕迹(Prefetch;工具名匹配,非样本哈希)
+# 0.22.0-treecourt-port 自树庭 miner-known-tool-process 迁移:
+# 树庭锚 process_exec.name(进程快照)——丰图无进程快照事件面,
+# 改锚 prefetch_exec.exe_name(执行痕迹面,覆盖「跑过」语义,比进程
+# 快照更抗清理);签名值零缩水,锚点适配如实标注。
+id: miner-known-tool-prefetch
+title: 知名矿工执行痕迹(Prefetch)
+severity: high
+target: any
+match:
+  exe_name_eq:
+    - xmrig.exe
+    - minerd.exe
+    - cpuminer.exe
+    - cpuminer-multi.exe
+    - ethminer.exe
+    - cgminer.exe
+    - bfgminer.exe
+    - nbminer.exe
+    - lolminer.exe
+note: >-
+  Prefetch 显示知名开源/半开源挖矿程序被执行(xmrig/minerd/cpuminer/
+  ethminer/cgminer/nbminer/lolminer);同名正常软件存在理论可能,
+  high 级待审由人看路径与命令行复核。(树庭原规则锚进程快照名,
+  丰图以 Prefetch 执行痕迹表达同名签名。)

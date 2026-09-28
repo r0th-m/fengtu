@@ -1,0 +1,14 @@
+# 跨主机:同一文件哈希出现在 ≥2 台主机(树庭 §8.2 逐字语义);
+# 0.25.0-datasource-unlock 自树庭同名规则迁移。
+id: xhost-shared-file-hash
+title: 同一文件哈希出现在多台主机
+severity: high
+target: entity
+match:
+  entity_type: [file_hash]
+  qualifier: [global]
+  min_hosts: 2
+note: >-
+  同一 sha256 的样本文件出现在 ≥2 台主机,提示同一样本的横向传播。
+  基于 canonical_key 聚合:hash:sha256:<h> 为 global 身份(哈希即
+  身份),GROUP BY canonical_key HAVING COUNT(DISTINCT host)>=min_hosts。

@@ -1,0 +1,13 @@
+# Linux 勒索:破坏/删快照命令行(LVM/文件系统/擦除面,通用行为)
+id: linux-ransom-destructive-cmdline
+title: 破坏/删快照命令(进程命令行)
+severity: high
+target: any
+match:
+  source_eq: [ps_auxwwf]
+  command_contains: [lvremove, vgremove, wipefs, "shred ", "mkfs.", cryptsetup, "dd if=/dev/zero", "rm -rf /"]
+note: >-
+  进程命令行中出现破坏/反取证命令:lvremove/vgremove(拆 LVM 卷,
+  Linux 的「删快照」对应物)、wipefs/mkfs(抹文件系统)、shred(安全
+  擦除)、cryptsetup、dd if=/dev/zero、rm -rf 根路径。勒索动手前先断
+  后路的通用动作;运维卷管理也存在,由人结合时间与属主判定。

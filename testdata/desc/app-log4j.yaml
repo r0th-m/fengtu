@@ -1,0 +1,20 @@
+name: app-log4j
+title: 应用 log4j 日志(MM-dd 简写日期,带堆栈合并)
+kind: regex
+line_regex: ^(?P<ts>\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(?P<level>[A-Z]+)\s+(?P<logger>\S+)\s+-\s+(?P<message>.*)$
+field_map:
+  ts: ts_raw
+  level: level
+  logger: logger
+  message: message
+ts_field: ts
+ts_formats:
+- '%m-%d %H:%M:%S'
+multiline:
+  start_regex: ^\d{2}-\d{2} \d{2}:\d{2}:\d{2}\s+[A-Z]+\s
+  max_continuation_lines: 2000
+  max_block_bytes: 1000000
+status: draft
+note: 实测于用户真实样本(catalina.out,SmartBI 应用日志,行如 "04-27 16:26:48 DEBUG logSqlInfo(smartbi.util.JdbcUtil:52)
+  - [SQL] ..."); 简写日期无年份——归一按「源声明时区+当年」语义,跨年如实归属解析纪律 (日志跨年截断处可能错位,如实标注,不猜);JULI 行不匹配本式,
+  按坏行/孤儿块如实计数。

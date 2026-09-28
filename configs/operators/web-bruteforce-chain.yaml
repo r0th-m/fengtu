@@ -1,0 +1,18 @@
+# sequence 链式:爆破链(失败×N → 窗口内成功)。
+# 状态码语义是应用属性,可配;默认 401/403→200 只是通用起点(判定要点
+# 随命中 detail 返回)。ts 缺失源窗口降级按行距,如实记 window_basis。
+id: web-bruteforce-chain
+title: Web 爆破链(失败×N → 窗口内成功)
+family: web
+severity: high
+applicable_to:
+  log_types: [web_access]
+params:
+  fail_threshold: 10
+  window_seconds: 600
+  window_lines: 2000
+  fail_status: ["401", "403"]
+  success_status: ["200"]
+implemented: true
+note: 同 src_ip 失败次数达阈后窗口内出现成功;命中≠结论,先确认应用成功语义
+max_hits: 500

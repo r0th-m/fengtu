@@ -1,0 +1,14 @@
+name: app-json
+title: 应用 JSON 行日志(合成样例)
+kind: json
+json: true
+field_map:
+  ts: ts_raw
+  level: level
+  logger: logger
+  msg: message
+ts_field: ts
+ts_formats:
+- '%Y-%m-%dT%H:%M:%S'
+status: draft
+note: 合成样例(非真实样本),覆盖 kind=json 的 golden 对照

@@ -1,0 +1,103 @@
+# Linux 数据外泄排查·意图链模板(0.22.0-treecourt-port;由树庭
+# linux-exfil-v1 手册蒸馏为意图树。依赖数据源:LinuxSC/Strata 采集包
+# (ss/conntrack/进程快照/可写目录快照)——意图树是思路不依赖数据,
+# 数据源未接入时各意图如实宣告「数据未覆盖」)
+id: linux-exfil
+version: 1
+title: Linux 数据外泄排查(意图链模板)
+description: >-
+  Linux 数据外泄排查:ss+conntrack 双视角找大出站与非常规通道,文件传输
+  协议端口预筛,进程命令行找压缩打包(tar/gzip/zip)与上传通道(curl/
+  wget/scp/rsync/rclone;LinuxSC 无 shell 历史只有进程快照,已退出的
+  命令查不到,如实降级),可写目录快照与已删除仍持有文件找打包现场,
+  时间线看非工作时间活动。依赖 LinuxSC/Strata 数据源;数据缺失如实报
+  「数据未覆盖」,不硬编。
+os: linux
+goal: >-
+  回答「数据有没有被拿走」:收集 → 打包 → 传输三段各找证据并互证;
+  快照型证据的边界(无字节计数、已退出命令不可见)如实声明。
+intents:
+  - key: big_outbound
+    host_scope: each
+    text: ss+conntrack 双视角里有没有大出站/非常规通道?
+    ask: >-
+      外泄先看水管:ss 快照公网外联(私网剔除后)和 conntrack 内核连接
+      跟踪对着看——公网非常见端口的已建立连接、陌生进程持有的外联、
+      conntrack 里 ss 已看不到的短命大连接(传完就断)。丑话:两个都是
+      快照没有字节计数,「大」只能从连接存续与进程身份推断,字节量
+      说不清就如实说,建议补 PCAP/NetFlow。NTP/DNS/系统更新别凑数。
+  - key: transfer_ports
+    after: [big_outbound]
+    host_scope: each
+    text: 文件传输协议端口(20/21/69/873/989/990)上有没有公网方向连接?
+    ask: >-
+      传输协议端口单独看:FTP/TFTP/rsync/FTPS 端口命中——盯对公网地址
+      的传输连接(往外传嫌疑)、持有连接的进程身份、和可疑外联对不对
+      得上。内网运维 rsync 备份很常见,内网段的先放一放,重点看公网
+      方向;命中≠实锤,说理由。
+  - key: archive_cmdline
+    host_scope: each
+    text: 进程命令行里有没有压缩打包动作(外泄前的收集)?
+    ask: >-
+      外泄前多半要打包:tar cz/gzip/bzip2/zip -r/7z/rar——盯打包源是
+      业务数据目录的、输出到 /tmp//dev/shm//var/tmp 的、进程还活着能
+      看到完整命令行的。丑话:只有进程快照——打包完退出的查不到,
+      历史上打没打过包这里回答不了,如实说。日常备份打包是常态,
+      说得出哪里不对才算数。
+  - key: upload_cmdline
+    after: [archive_cmdline]
+    host_scope: each
+    text: 进程命令行里有没有上传通道(curl -T/scp/rsync/rclone/ncat)?
+    ask: >-
+      看传去哪儿了:curl -T/--upload-file、scp/rsync 对公网地址、rclone
+      (网盘通道头名)、lftp、ncat 反连传文件。每条指出目标地址与方向;
+      对得上传输端口连接的重点说。同样只有进程快照,已退出的上传命令
+      查不到,如实标注证据边界,别编。
+  - key: staging
+    host_scope: each
+    text: 可写目录快照里有没有打包现场(压缩包/成批文档/传完即焚)?
+    ask: >-
+      找打包现场:/dev/shm、/tmp、/var/tmp 目录快照——盯压缩包
+      (*.tar.gz/*.zip/*.7z)、成批汇集的文档目录、随机名大文件;
+      已删除仍被持有文件里「打包完就删」的压缩包残影(传完即焚的经典
+      动作)单独拎出来。和打包命令行互相对得上的是硬链。临时目录合法
+      用途多,报之前想清楚它凭什么在那。
+  - key: rules_crosscheck
+    after: [transfer_ports, upload_cmdline, staging]
+    host_scope: each
+    text: 规则命中与前序发现能不能互证(传输端口/上传命令/网盘方向)?
+    ask: >-
+      把待审命中和前序发现摆一起:传输协议端口外联、上传/压缩命令行
+      这些命中,和盯上的连接与进程对不对得上?两边都对上的通道重点说;
+      只有一边的如实标注证据单薄,待人工核。公司本来就用的备份/同步
+      通道别当外泄报,说清排除理由。
+  - key: offhours_timeline
+    after: [rules_crosscheck]
+    host_scope: each
+    text: 非工作时间活动时间线:「收集 → 打包 → 外联传输」排在什么钟点?
+    ask: >-
+      收尾看钟点:按前序发现的时间提示拉时间线,串「收集 → 打包 → 外联
+      传输」的链;重点说活动时段——深夜/节假日的集中打包与外联是外泄
+      典型钟点(按主机时区核)。时段正常或排不出链的,如实说,别硬连。
+  # 0.32.1-case-distilled:独立复核固定节点(收官前;蒸馏自成功勒索案
+  # 排查——该案全部重大错误都是第二遍核验抓出来的)
+  - key: independent_review
+    after: [rules_crosscheck]
+    host_scope: all
+    text: 独立复核:换一个视角复核本链关键归因,初稿结论经得起第二遍核验吗?
+    ask: >-
+      收官前固定节点(初稿 → 独立复核 → 更正):换一个视角复核本链
+      关键归因——①会话回钉:把操作归因到登录会话时,会话标识
+      (Windows 的 LogonId 一类)是否回钉到登录成功事件核实过,还是
+      靠时间相邻猜的(时间相邻≠会话归属);②阴性结果的日志覆盖前提:
+      宣告「没有 X」之前先确认该通道在该窗口有覆盖,覆盖不到的窗口
+      如实标「不可考」,不拿阴性结果当排除;③关键时间点(首次失陷/
+      操作窗口)换一条证据路径重新推一遍,与初稿不一致就如实更正,
+      不护短。
+  - key: coverage_gate
+    after: [offhours_timeline, independent_review]
+    host_scope: all
+    text: 覆盖闸收官:哪些品类查过、哪些没查过,还有没有未核实的疑点?
+    ask: >-
+      收官宣告:对照源覆盖逐项宣告「查过/未覆盖/数据缺失」,零沉默;
+      未核实疑点列成清单交给人。覆盖不全如实标,不硬编结论。

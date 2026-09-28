@@ -1,0 +1,16 @@
+# 链式:认证爆破链(4625×N → 窗口内 4624,同计算机+同账户)。
+# 机器账户($ 后缀)/占位账户结构性排除;服务账户噪音归人裁决不替人滤。
+id: host-auth-chain
+title: 认证爆破链(4625×N → 4624)
+family: host
+severity: high
+applicable_to:
+  log_types: [windows_event_log]
+params:
+  fail_event: 4625
+  success_event: 4624
+  fail_threshold: 10
+  window_seconds: 600
+implemented: true
+note: 同计算机+同账户失败达阈后窗口内成功;命中≠结论,先确认账户语义
+max_hits: 500

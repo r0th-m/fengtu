@@ -1,0 +1,10 @@
+# 构建产物与本地账本缓存
+.bin/
+# 环境口令文件(永不入库;模板 .env.example 除外)
+.env
+# 台架验证产物(含真实案件派生数据,永不入库)
+.verify/
+# 前端依赖与构建产物(embed dist 只入库占位页 placeholder.html)
+frontend/node_modules/
+internal/webui/dist/*
+!internal/webui/dist/placeholder.html

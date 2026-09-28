@@ -1,0 +1,92 @@
+# 丰图 M5 主部署形态(DESIGN §12 拍板):docker compose 一栈起齐。
+# 三服务:fengtu(单二进制,前端 embed)+ PostgreSQL 16 + ClickHouse 25.8。
+name: fengtu
+#
+# 用法(仓库根目录):
+#   cp .env.example .env   # 改口令(三处必须同串,见 .env 注释)
+#   docker compose build
+#   docker compose up -d
+#
+# 绑定纪律(§9):丰图 web 口缺省只绑宿主 127.0.0.1:8200(FENGTU_BIND_IP 控制),
+# 要给别人访问就显式改内网 IP 或反代 TLS;PG/CH 不对宿主暴露任何端口,
+# 只在 compose 内部网络互通,排障一律 docker exec 进容器。
+#
+# 内存纪律:ClickHouse 是内存大户,users.d 挂载 deploy/ch-limits.xml 给
+# default profile 加 server 级 max_memory_usage 保险丝(缺省 8GB,
+# 按 16GB 机型给的参考值——与应用层会话级 4GB 保险丝(DESIGN §4.2)叠加,
+# 换机型自己改 deploy/ch-limits.xml,改完 compose up -d 生效)。
+#
+# schema 初始化:PG/CH 的 entrypoint initdb 只在数据卷为空的首启执行一次
+# (deploy/schema/pg|ch → initdb 目录);存量库靠 server 启动时 Migrate 幂等
+# 补齐,升级不需要手工 SQL(见 docs/DEPLOY.md §5)。
+
+services:
+  fengtu:
+    build:
+      context: .
+      args:
+        # 国内构建加速(可选):NPM_REGISTRY=https://registry.npmmirror.com
+        NPM_REGISTRY: ${NPM_REGISTRY:-}
+    image: fengtu:0.32.1
+    container_name: fengtu-server
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${FENGTU_BIND_IP:-127.0.0.1}:8200:8200"
+    volumes:
+      - fengtu_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8200/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  postgres:
+    image: postgres:16
+    container_name: fengtu-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fengtu
+      POSTGRES_USER: fengtu
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 未配,见 .env}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./deploy/schema/pg:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fengtu -d fengtu"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8
+    container_name: fengtu-ch
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: fengtu
+      CLICKHOUSE_USER: fengtu
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?CLICKHOUSE_PASSWORD 未配,见 .env}
+    volumes:
+      - ch_data:/var/lib/clickhouse
+      - ./deploy/schema/ch:/docker-entrypoint-initdb.d:ro
+      - ./deploy/ch-limits.xml:/etc/clickhouse-server/users.d/fengtu-limits.xml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  pg_data:
+  ch_data:
+  fengtu_data:

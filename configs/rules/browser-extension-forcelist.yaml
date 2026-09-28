@@ -1,0 +1,15 @@
+# 浏览器强制安装扩展策略(ExtensionInstallForcelist)
+# 0.22.0-treecourt-port 自树庭 browser-extension-forcelist 迁移:
+# 树庭锚 browser_ext_policy.key_path(专题) → 丰图锚 registry_value.key_path
+# (hive 通用遍历覆盖 SOFTWARE/NTUSER 策略键位);签名值零缩水。
+id: browser-extension-forcelist
+title: 存在策略强制安装的浏览器扩展(ExtensionInstallForcelist)
+severity: medium
+target: any
+match:
+  key_path_contains:
+    - 'extensioninstallforcelist'
+note: >-
+  ExtensionInstallForcelist 里的扩展用户无法自行卸载——企业管控会用,
+  恶意软件也用(锁恶意扩展)。环境差异大(域管策略常见),medium 待审,
+  由人核对扩展 ID 是否单位下发。

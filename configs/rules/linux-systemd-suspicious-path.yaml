@@ -1,0 +1,12 @@
+# Linux:systemd 单元 ExecStart 指向可疑路径(可写目录)
+id: linux-systemd-suspicious-path
+title: systemd 单元 ExecStart 指向可疑路径
+severity: high
+target: any
+match:
+  exec_start_contains: ["/tmp/", "/dev/shm", "/var/tmp/"]
+note: >-
+  systemd 单元的 ExecStart 指向 /tmp/、/dev/shm、/var/tmp/ 可写目录——
+  合法服务几乎不从这些位置启动,是服务化持久化的通用特征。
+  (树庭曾含 /. 隐藏路径匹配,真机误伤 selinux-autorelabel 等合法
+  单元——/.autorelabel 是正常机制,已剔除,只留可写目录;照抄。)

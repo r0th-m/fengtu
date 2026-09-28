@@ -1,0 +1,19 @@
+# 索图规则资产迁移(2026-09-25 对照表 §2.2,语义不变,签名内容未缩水;
+# target 索图原作 web,丰图 log_type 分类未落地,按引擎 spec 写 any——
+# 引擎只支持 any,写 web 会拒载,不猜;scanner-ua 已同法迁移)
+# SQLi:时间盲注族(MySQL SLEEP/BENCHMARK、MSSQL WAITFOR、PostgreSQL pg_sleep)
+id: sqli-time-based
+title: SQL 注入时间盲注特征
+severity: high
+target: any
+match:
+  query:
+    - "sleep("
+    - "benchmark("
+    - "waitfor delay"
+    - "waitfor%20delay"
+    - "pg_sleep"
+note: >-
+  时间盲注是主流数据库延型函数的通称:MySQL SLEEP()/BENCHMARK()、
+  MSSQL WAITFOR DELAY、PostgreSQL pg_sleep()——出现在查询串里几乎
+  无正常业务语义,属公开攻击知识(OWASP/sqlmap 手册)。

@@ -1,0 +1,6 @@
+{"line_no":1,"kind":"bad","ts_raw":null,"ts_utc":null,"norm":{},"raw":"孤儿续行在前(无宿主)","continuation_lines":0,"reason":"续行无宿主事件(起始正则未匹配,前面没有可并入的事件)"}
+{"line_no":2,"kind":"event","ts_raw":"04-27 16:26:48","ts_utc":"1900-04-27T08:26:48Z","norm":{"level":"INFO","logger":"com.example.App","message":"started"},"raw":"04-27 16:26:48 INFO  com.example.App - started\n\tat com.example.App.main(App.java:10)","continuation_lines":1}
+{"line_no":7,"kind":"skip","ts_raw":null,"ts_utc":null,"norm":{},"raw":"","continuation_lines":0,"reason":"空行"}
+{"line_no":4,"kind":"event","ts_raw":"04-27 16:26:49","ts_utc":"1900-04-27T08:26:49Z","norm":{"level":"ERROR","logger":"com.example.Db","message":"query failed"},"raw":"04-27 16:26:49 ERROR com.example.Db - query failed\njava.sql.SQLException: boom\n\tat com.example.Db.q(Db.java:42)","continuation_lines":2}
+{"line_no":8,"kind":"event","ts_raw":"04-27 16:26:50","ts_utc":"1900-04-27T08:26:50Z","norm":{"level":"WARN","logger":"com.example.Cache","message":"low"},"raw":"04-27 16:26:50 WARN  com.example.Cache - low\n04-27 bad:xx INFO x - y","continuation_lines":1}
+{"line_no":10,"kind":"bad","ts_raw":"99-99 99:99:99","ts_utc":null,"norm":{},"raw":"99-99 99:99:99 INFO com.x - bad ts start line","continuation_lines":0,"reason":"时间解析失败(字段 'ts',ts_formats 全部不匹配)"}

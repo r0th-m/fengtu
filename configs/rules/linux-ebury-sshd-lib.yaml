@@ -1,0 +1,15 @@
+# Linux:sshd 动态库依赖命中 Ebury IOC(解析器两档预筛 is_ioc 直通)
+id: linux-ebury-sshd-lib
+title: sshd 动态库命中 Ebury IOC(libns2 等硬 IOC / libkeyutils 异常路径)
+severity: high
+target: any
+match:
+  source_eq: [ldd_sshd]
+  is_ioc_eq: ["true"]
+note: >-
+  sshd 进程加载的动态库命中 Ebury SSH 后门 IOC(解析器按公开 IOC 分档
+  预筛):libns2/libpw5 等 Ebury 特有伪装名合法系统不应出现,直接命中;
+  libkeyutils.so.1 在 RHEL/CentOS 上经 krb5 合法链接(真机全中=误报),
+  仅当 resolved 落在非标准库目录(替换/劫持迹象)才命中。诚实边界:
+  篡改版 libkeyutils 常原位替换标准路径文件,本规则判不出——需人工比对
+  包校验(rpm -V/dpkg -V)与文件哈希;命中≠感染,判断权归人。
